@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="css/angular-material.min.css" />
+    <link rel="stylesheet" type="text/css" href="css/styles.css" />
+  </head>
+  <body ng-app="widget">
+    <md-content ng-controller="WidgetCtrl">
+      <md-card ng-repeat="offering in results">
+        <img class="md-card-image" ng-src="{{ getDefaultImage(offering) }}">
+        <md-card-title>
+          <md-card-title-text>
+            <span class="md-headline">{{ offering.name }}</span>
+          </md-card-title-text>
+        </md-card-title>
+        <md-card-content>
+          <p>{{ offering.description ? offering.description : 'No description provided' }}</p>
+        </md-card-content>
+        <md-card-actions layout="row" layout-align="end center">
+          <md-button>Details</md-button>
+          <md-button>Purchase</md-button>
+        </md-card-actions>
+      </md-card>
+    </md-content>
+
+    <script src="js/moment.min.js"></script>
+    <script src="js/angular.min.js"></script>
+    <script src="js/angular-moment.min.js"></script>
+    <script src="js/angular-resource.min.js"></script>
+    <script src="js/angular-animate.min.js"></script>
+    <script src="js/angular-aria.min.js"></script>
+    <script src="js/angular-messages.min.js"></script>
+    <script src="js/angular-material.min.js"></script>
+    <script src="js/main.js"></script>
+    </body>
+</html>

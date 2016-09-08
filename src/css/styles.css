@@ -1,0 +1,17 @@
+
+.container-flex {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: space-around;
+}
+
+.container-flex .card {
+    width: 250px;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+
+.container-flex .card .card-img-top {
+    max-width: 100%;
+}
