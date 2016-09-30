@@ -35,7 +35,7 @@ module.exports = function (grunt) {
             },
             all: {
                 files: {
-                    src: ['src/js/**/*.js']
+                    src: ['src/js/main.js']
                 }
             },
             grunt: {
@@ -58,7 +58,7 @@ module.exports = function (grunt) {
 
         jscs: {
             widget: {
-                src: 'src/js/**/*.js',
+                src: 'src/js/main.js',
                 options: {
                     config: ".jscsrc"
                 }
@@ -140,7 +140,7 @@ module.exports = function (grunt) {
 
         jasmine: {
             test: {
-                src: ['src/js/*.js', '!src/js/main.js'],
+                src: ['src/js/main.js', '!src/js/main.js'],
                 options: {
                     specs: 'src/test/js/*Spec.js',
                     helpers: ['src/test/helpers/*.js'],
