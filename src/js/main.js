@@ -179,13 +179,46 @@ angular
                         productspecs_by_id[data.id] = data;
                     });
 
-                    harvestedOfferings = offerings.map(function (data) {
-                        data.productSpecification = productspecs_by_id[data.productSpecification.id];
-                        return data;
+                    // Look for missing ids
+                    var missingIds = [];
+                    productspecs.forEach(function (data) {
+                        if (data.isBundle) {
+                            data.bundledProductSpecification.forEach(function (spec) {
+                                if (productspecs_by_id[spec.id] === undefined) {
+                                    missingIds.push(spec.id);
+                                }    
+                            });
+                        }
                     });
 
-                    // Filter the offerings
-                    $scope.results = filterOfferings (harvestedOfferings, filters, query);
+                    $resource(url2).query({
+                        id: missingIds.join()
+
+                    }, function (bundledspecs) {
+                        // Store harvested specs
+                        bundledspecs.forEach(function (data) {
+                            productspecs_by_id[data.id] = data;
+                        });
+
+                        // Bind the specs to the offerings
+                        harvestedOfferings = offerings.map(function (data) {
+                            data.productSpecification = productspecs_by_id[data.productSpecification.id];
+
+                            // If an spec is a bundle, bind the bundled specs to it.
+                            if (data.productSpecification.isBundle) {
+                                var specs =  [];
+                                // Append available specs
+                                data.productSpecification.bundledProductSpecification.forEach(function (spec) {
+                                    specs.push(productspecs_by_id[spec.id]);
+                                });
+                                data.productSpecification.bundledProductSpecification = specs;
+                            }
+                            return data;
+                        });
+
+                        // Filter the offerings
+                        $scope.results = filterOfferings (harvestedOfferings, filters, query);
+                    });
                 });
             });
         };
@@ -201,7 +234,7 @@ angular
             var results = [];
             data.forEach(function (offering) {
                 if (filters.offeringType != null) {
-                    if ((filters.offeringType === "bundle") !== offering.isBundle || offering.productSpecification.isBundle]) {
+                    if ((filters.offeringType === "bundle") !== offering.isBundle || offering.productSpecification.isBundle) {
                         return;
                     }
                 }
