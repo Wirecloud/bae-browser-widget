@@ -9,7 +9,7 @@
  /*global StyledElements, MashupPlatform, angular, Set */
 
 angular
-    .module('widget', ['ngMaterial', 'ngResource'])
+    .module('widget', ['ngMaterial', 'ngResource', "angularMoment"])
     .controller('WidgetCtrl', function ($scope, $resource) {
         "use strict";
 
