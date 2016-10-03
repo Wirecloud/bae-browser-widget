@@ -16,7 +16,7 @@
         <md-card class="offering" ng-repeat="offering in results">
           <div class="thumbnail">
             <span class="label"> {{ offering.isBundle || offering.productSpecification.isBundle ? "Bundle" : "Single"}} </span>
-            <img class="image" ng-src="{{ getDefaultImage(offering) }}">
+            <img class="image" ng-src="{{ getDefaultImage(offering.productSpecification) }}">
           </div>
           <div class="panel-body">
             <div id="offeringName" class="h4 text ellipsis">

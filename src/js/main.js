@@ -59,13 +59,13 @@ angular
             MashupPlatform.prefs.registerCallback(function () {
                 if (filtersWidget) {
                     filtersWidget.remove();
-                    filtersWidget = null;    
+                    filtersWidget = null;
                 }
                 if (detailsWidget) {
                     detailsWidget.remove();
                     detailsWidget = null;
                 }
-                    
+
                 // Fetch new data
                 search();
                 $scope.$apply();
@@ -184,18 +184,19 @@ angular
                         productspecs_by_id[data.id] = data;
                     });
 
-                    // Look for missing ids
+                    // Look for missing ids. (Due to a productSpec having a bundle of productSpecs)
                     var missingIds = [];
                     productspecs.forEach(function (data) {
                         if (data.isBundle) {
                             data.bundledProductSpecification.forEach(function (spec) {
                                 if (productspecs_by_id[spec.id] === undefined) {
                                     missingIds.push(spec.id);
-                                }    
+                                }
                             });
                         }
                     });
 
+                    // Harvest missing product specs
                     $resource(url2).query({
                         id: missingIds.join()
 
@@ -207,18 +208,75 @@ angular
 
                         // Bind the specs to the offerings
                         harvestedOfferings = offerings.map(function (data) {
-                            data.productSpecification = productspecs_by_id[data.productSpecification.id];
+                            if (!data.isBundle) {
+                                data.productSpecification = productspecs_by_id[data.productSpecification.id];
 
-                            // If an spec is a bundle, bind the bundled specs to it.
-                            if (data.productSpecification.isBundle) {
-                                var specs =  [];
-                                // Append available specs
-                                data.productSpecification.bundledProductSpecification.forEach(function (spec) {
-                                    specs.push(productspecs_by_id[spec.id]);
-                                });
-                                data.productSpecification.bundledProductSpecification = specs;
+                                // If an spec is a bundle, bind the bundled specs to it.
+                                if (data.productSpecification.isBundle) {
+                                    var specs =  [];
+                                    // Append available specs
+                                    data.productSpecification.bundledProductSpecification.forEach(function (spec) {
+                                        specs.push(productspecs_by_id[spec.id]);
+                                    });
+                                    data.productSpecification.bundledProductSpecification = specs;
+                                }
                             }
+
                             return data;
+                        });
+
+                        // Build offering bundles
+                        harvestedOfferings.forEach(function (offering) {
+                            if (offering.isBundle) {
+                                offering.productSpecification = {
+                                    isBundle: true,
+                                    attachment: [{
+                                        type: "Picture",
+                                        url: ""
+                                    }],
+                                    bundledProductSpecification: []
+                                };
+
+                                var ids = [];
+                                var isPictureSet = false;
+                                offering.bundledProductOffering.forEach(function (data) {
+                                    ids.push(data.id);
+                                });
+
+                                var currentSpecsIds = [];
+                                harvestedOfferings.forEach(function (offer) {
+                                    var i = ids.indexOf(offer.id);
+                                    if (i !== -1) {
+                                        ids.splice(i, 1);
+                                        if (!offer.productSpecification.isBundle) {
+                                            // don't allow repeated specs
+                                            if (currentSpecsIds.indexOf(offer.productSpecification.id) === -1) {
+                                                offering.productSpecification.bundledProductSpecification.push(offer.productSpecification);
+                                                currentSpecsIds.push(offer.productSpecification.id);
+
+                                                // Try to set the offering image.
+                                                if (!isPictureSet) {
+                                                    isPictureSet = setBundledOfferingImage(offering, offer.productSpecification);
+                                                }
+                                            }
+
+                                        } else {
+                                            offer.productSpecification.bundledProductSpecification.forEach(function (spec) {
+                                                // don't allow repeated specs
+                                                if (currentSpecsIds.indexOf(spec.id) === -1) {
+                                                    offering.productSpecification.bundledProductSpecification.push(spec);
+                                                    currentSpecsIds.push(spec.id);
+
+                                                    // Try to set the offering image
+                                                    if (!isPictureSet) {
+                                                        isPictureSet = setBundledOfferingImage(offering, spec);
+                                                    }
+                                                }
+                                            });
+                                        }
+                                    }
+                                });
+                            }
                         });
 
                         // Filter the offerings
@@ -226,6 +284,16 @@ angular
                     });
                 });
             });
+        };
+
+        var setBundledOfferingImage = function setBundledOfferingImage (offering, spec) {
+            var img = getDefaultImage(spec);
+            if (img && img !== "") {
+                offering.productSpecification.attachment[0].url = img;
+                return true;
+            } else {
+                return false;
+            }
         };
 
         // Apply filters to harvested data
@@ -239,7 +307,7 @@ angular
             var results = [];
             data.forEach(function (offering) {
                 if (filters.offeringType != null) {
-                    if ((filters.offeringType === "bundle") !== offering.isBundle || offering.productSpecification.isBundle) {
+                    if ((filters.offeringType === "bundle") !== (offering.isBundle || offering.productSpecification.isBundle)) {
                         return;
                     }
                 }
@@ -283,8 +351,8 @@ angular
         };
 
         // Return the first attached image
-        var getDefaultImage = function getDefaultImage (offering) {
-            var attachments = offering.productSpecification.attachment;
+        var getDefaultImage = function getDefaultImage (spec) {
+            var attachments = spec.attachment;
             for (var i = 0; i < attachments.length; i++) {
                 if (attachments[i].type === "Picture") {
                     return attachments[i].url;
