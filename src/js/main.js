@@ -6,7 +6,7 @@
  * Licensed under the Apache-2.0 license.
  */
 
- /*global StyledElements, MashupPlatform, angular, Set */
+ /*global StyledElements, MashupPlatform, angular */
 
 angular
     .module('widget', ['ngMaterial', 'ngResource', "angularMoment"])
@@ -168,10 +168,15 @@ angular
             }, function (offerings) {
                 var url2 = MashupPlatform.prefs.get('server_url') + '/DSProductCatalog/api/catalogManagement/v2/productSpecification';
 
+                var idsToHarvest = [];
+                offerings.forEach(function (offering) {
+                    if (!offering.isBundle) { //Offering bundles dont have productSpecification
+                        idsToHarvest.push(offering.productSpecification.id);
+                    }
+                });
+
                 $resource(url2).query({
-                    id: Array.from(new Set(offerings.map(function (data) {
-                        return data.productSpecification.id;
-                    }))).join()
+                    id: idsToHarvest.join()
                 }, function (productspecs) {
                     var productspecs_by_id = {};
 
