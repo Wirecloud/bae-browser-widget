@@ -311,21 +311,28 @@ angular
                         return;
                     }
                 }
+
                 if (filters.macType) {
                     var mediaType = "";
-                    var characteristics = offering.productSpecification.productSpecCharacteristic;
-                    if (characteristics) {
-                        for (var i = 0; i < characteristics.length; i++) {
-                            if (characteristics[i].name === "Media type") {
-                                mediaType = characteristics[i].productSpecCharacteristicValue[0];
+                    // Loop all producSpecs of the offering
+                    var specs = offering.productSpecification.bundledProductSpecification || [offering.productSpecification];
+
+                    if (!specs.some(function (spec) {
+                        var characteristics = spec.productSpecCharacteristic;
+                        if (characteristics) {
+                            for (var i = 0; i < characteristics.length; i++) {
+                                if (characteristics[i].name === "Media type") {
+                                    mediaType = characteristics[i].productSpecCharacteristicValue[0].value;
+                                }
                             }
                         }
-                    }
-                    if (filters.macType === mediaType) {
+
+                        return filters.macType === mediaType;
+                    })) {
                         return;
                     }
-
                 }
+
                 if (filters.catalogueId) {
                     if (offering.href.match(/catalog\/(.*)\/productOffering/)[1] !== filters.catalogueId) {
                         return;
