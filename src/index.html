@@ -15,7 +15,7 @@
       <div class="se-vl-center-container">
         <md-card class="offering" ng-repeat="offering in results">
           <div class="thumbnail">
-            <span class="label"> {{ offering.isBundle || offering.productSpecification.isBundle ? "Bundle" : "Single"}} </span>
+            <span class="label"> {{ offering.isBundle || offering.productSpecification.isBundle ? offering.productSpecification.bundledProductSpecification.length + " Bundled" : "Single"}} </span>
             <img class="image" ng-src="{{ getDefaultImage(offering.productSpecification) }}">
           </div>
           <div class="panel-body">
