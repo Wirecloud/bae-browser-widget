@@ -12,7 +12,7 @@
         <div class="se-hl-center-container" id="textFilter"></div>
         <div class="se-hl-east-container" id="buttons"></div>
       </div>
-      <div class="se-vl-center-container">
+      <div class="section se-vl-center-container">
         <md-card class="offering" ng-repeat="offering in results">
           <div class="thumbnail">
             <span class="label"> {{ offering.isBundle || offering.productSpecification.isBundle ? offering.productSpecification.bundledProductSpecification.length + " Bundled" : "Single"}} </span>
@@ -32,11 +32,10 @@
               <p>v{{ offering.version}}</p>
               <p>{{ offering.description ? offering.description : 'No description provided' }}</p>
             </div>
-
-            <div>
-              <md-button class="detailsButton se-btn btn-info" ng-click="onDetailsClickListener($index)">Details</md-button>
-              <md-button class="buyButton se-btn btn-success">Purchase</md-button>
-            </div>
+          </div>
+          <div class="buttonsDiv">
+            <md-button class="detailsButton se-btn btn-info" ng-click="onDetailsClickListener($index)">Details</md-button>
+            <md-button class="buyButton se-btn btn-success">Purchase</md-button>
           </div>
         </md-card>
       </div>
