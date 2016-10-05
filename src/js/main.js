@@ -6,19 +6,22 @@
  * Licensed under the Apache-2.0 license.
  */
 
- /*global StyledElements, MashupPlatform, angular */
+ /*global StyledElements, MashupPlatform, angular, Promise */
 
 angular
     .module('widget', ['ngMaterial', 'ngResource', "angularMoment"])
     .controller('WidgetCtrl', function ($scope, $resource) {
         "use strict";
 
-        var filtersWidget, detailsWidget;
+        var filtersWidget, detailsWidgets = {};
         var query, filters, harvestedOfferings;
+
+        var baseUrl;
 
         var init = function init () {
             query = "";
             filters = {};
+            baseUrl = MashupPlatform.prefs.get('server_url');
             harvestedOfferings = [];
 
             $scope.results = [];
@@ -52,23 +55,25 @@ angular
             refreshButton.addEventListener("click", function () {
                 // Fetch new data
                 search();
-                $scope.$apply();
             });
 
-            // Remove all created widgets on pref change (their data might be outdated)
+            // Remove the filters widget as its data could be outdated
             MashupPlatform.prefs.registerCallback(function () {
                 if (filtersWidget) {
                     filtersWidget.remove();
                     filtersWidget = null;
                 }
-                if (detailsWidget) {
-                    detailsWidget.remove();
-                    detailsWidget = null;
-                }
+                var keys = Object.keys(detailsWidgets);
+                keys.forEach(function (key) {
+                    detailsWidgets[key].remove();
+                    detailsWidgets[key] = null;
+                });
 
+                detailsWidgets = {};
+
+                baseUrl = MashupPlatform.prefs.get('server_url');
                 // Fetch new data
                 search();
-                $scope.$apply();
             });
 
             search();
@@ -102,7 +107,6 @@ angular
 
         // Create filter widget and connect it
         var createFiltersWidget = function createFiltersWidget () {
-            // Only create it if it doesnt exist
             if (filtersWidget != null) {
                 return;
             }
@@ -118,6 +122,7 @@ angular
                     }
                 }
             };
+
             filtersWidget = MashupPlatform.mashup.addWidget('CoNWeT/bae-search-filters/0.1.0', options);
             filtersInput.connect(filtersWidget.outputs.filters);
             //Bind remove event
@@ -129,9 +134,9 @@ angular
         };
 
         // Creates a details widget and returns an output endpoint connected to it.
-        var createDetailsWidget = function createDetailsWidget (name) {
-            // Only create it if it doesnt exist
-            if (detailsWidget != null) {
+        var createDetailsWidget = function createDetailsWidget (name, id) {
+
+            if (detailsWidgets[id]) {
                 return;
             }
 
@@ -141,12 +146,16 @@ angular
                 width: "400px",
                 height: "300px"
             };
-            detailsWidget = MashupPlatform.mashup.addWidget('CoNWeT/bae-details/0.1.0', options);
+
+            var detailsWidget = MashupPlatform.mashup.addWidget('CoNWeT/bae-details/0.1.0', options);
             detailsWidget.inputs.offering.connect(detailsOutput);
             //Bind remove event
             detailsWidget.addEventListener("remove", function () {
                 detailsWidget = null;
+                delete detailsWidgets[id];
             });
+
+            detailsWidgets[id] = detailsWidget;
 
             return detailsOutput;
         };
@@ -154,19 +163,19 @@ angular
         // Creates details widget and sends chosen offering details to it.
         var onDetailsClickListener = function onDetailsClickListener (index) {
             var offering = $scope.results[index];
-            var connectedOutput = createDetailsWidget(offering.name);
+            var connectedOutput = createDetailsWidget(offering.name, offering.id);
             connectedOutput.pushEvent($scope.results[index]);
         };
 
         // Fetch data from the chosen server
         var search = function search() {
             harvestedOfferings = [];
-            var url1 = MashupPlatform.prefs.get('server_url') + '/DSProductCatalog/api/catalogManagement/v2/productOffering';
+            var url1 = baseUrl + '/DSProductCatalog/api/catalogManagement/v2/productOffering';
 
             $resource(url1).query({
                 lifecycleStatus: 'Launched'
             }, function (offerings) {
-                var url2 = MashupPlatform.prefs.get('server_url') + '/DSProductCatalog/api/catalogManagement/v2/productSpecification';
+                var url2 = baseUrl + '/DSProductCatalog/api/catalogManagement/v2/productSpecification';
 
                 var idsToHarvest = [];
                 offerings.forEach(function (offering) {
@@ -279,10 +288,44 @@ angular
                             }
                         });
 
-                        // Filter the offerings
-                        $scope.results = filterOfferings (harvestedOfferings, filters, query);
+                        // Harvest asset Data
+                        var promises = [];
+                        Object.keys(productspecs_by_id).forEach(function (key) {
+                            var asset = productspecs_by_id[key];
+                            var characteristics = asset.productSpecCharacteristic;
+                            // Only harvest asset data if its a Wirecloud Component
+                            if (characteristics) {
+                                if (characteristics.some(function (char) {
+                                    if (char.name === "Asset type") {
+                                        return "Wirecloud component" === char.productSpecCharacteristicValue[0].value;
+                                    }
+                                })) {
+                                    promises.push(harvestAssetData(asset));
+                                }
+                            }
+                        });
+
+                        // Wait for asset data
+                        Promise.all(promises).then(function () {
+                            // Filter the offerings
+                            $scope.results = filterOfferings (harvestedOfferings, filters, query);
+                            $scope.$apply();
+                        });
                     });
                 });
+            });
+        };
+
+        // Returns a promise harvesting the asset data of a productSpecification
+        var harvestAssetData = function harvestAssetData (spec) {
+            return new Promise (function (fulfill, reject) {
+                var url = baseUrl + "/charging/api/assetManagement/assets/product/" + spec.id;
+                $resource(url).query({},
+                    function (asset) {
+                        spec.asset = asset[0];
+                        fulfill(true);
+                    }
+                );
             });
         };
 
