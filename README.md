@@ -1,7 +1,9 @@
-BAE Browser Widget widget
+BAE Browser Widget
 ======================
 
-The BAE Browser Widget widget is a WireCloud widget that provides ...
+The BAE Browser Widget is a WireCloud widget that provides the ability to browse, filter and check the offerings available at a BAE instance in a simple widget easily configured just by providing the BAE instance's URL.
+
+This widget requires the [bae-details-widget](https://github.com/Wirecloud/bae-details-widget) and the [bae-search-filters-widget](https://github.com/Wirecloud/bae-search-filters-widget) to be added to the Wirecloud instance resources in order to work.
 
 Build
 -----
@@ -43,27 +45,19 @@ If everything goes well, you will find a wgt file in the `dist` folder.
 
 ## Settings
 
-`Write here the preferences`
+-`Server URL`: The BAE instance to be used.
 
 ## Wiring
 
-
-### Input Endpoints
-
-`Write here the input wiring endpoints`
-
-
-### Output Endpoints
-
-
-`Write here the output wiring endpoints`
+This widget has no wiring.
 
 ## Usage
 
+To use this Wirecloud component you just need to add it to a dashboard and set its `Server URL` preference.
 
-## Reference
+Afterwards, you can specify the filters to be applied to harvested offerings and filter them by name, or display an offering details, by clicking on it, such as the products it offers and its price.
 
-- [FIWARE Mashup](https://mashup.lab.fiware.org/)
+This component uses the [bae-details-widget](https://github.com/Wirecloud/bae-details-widget) and the [bae-search-filters-widget](https://github.com/Wirecloud/bae-search-filters-widget) to work, so those components must be added to the Wirecloud instance too, though they dont have to be added to the dashboard nor configured in any way as they are created dynamically by the `bae-browser-widget`.
 
 ## Copyright and License
 

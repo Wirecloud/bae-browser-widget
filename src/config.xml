@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<widget xmlns="http://wirecloud.conwet.fi.upm.es/ns/macdescription/1" vendor="CoNWeT" name="bae-browser" version="0.1.1">
+<widget xmlns="http://wirecloud.conwet.fi.upm.es/ns/macdescription/1" vendor="CoNWeT" name="bae-browser" version="0.1.0">
   <details>
     <title>BAE Browser</title>
     <homepage>https://github.com/Wirecloud/bae-browser-widget</homepage>
@@ -7,7 +7,7 @@
     <email>jpajuelo@conwet.com</email>
     <image></image>
     <smartphoneimage></smartphoneimage>
-    <description>The best project ever.</description>
+    <description>Browse and check BAE offerings .</description>
     <longdescription>DESCRIPTION.md</longdescription>
     <changelog>doc/changelog.md</changelog>
     <doc>doc/index.md</doc>
