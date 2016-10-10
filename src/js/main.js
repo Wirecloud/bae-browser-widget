@@ -16,6 +16,8 @@ angular
         var filtersWidget, detailsWidgets = {};
         var query, filters, harvestedOfferings;
 
+        var targetCategory;
+
         var baseUrl;
 
         var init = function init () {
@@ -73,10 +75,13 @@ angular
 
                 baseUrl = MashupPlatform.prefs.get('server_url');
                 // Fetch new data
-                search();
+
+                var promise = searchWirecloudCatalog ();
+                promise.then(search);
             });
 
-            search();
+            var promise = searchWirecloudCatalog ();
+            promise.then(search);
         };
 
         var setQuery = function setQuery (q) {
@@ -167,149 +172,199 @@ angular
             connectedOutput.pushEvent($scope.results[index]);
         };
 
-        // Fetch data from the chosen server
-        var search = function search() {
-            harvestedOfferings = [];
-            var url1 = baseUrl + '/DSProductCatalog/api/catalogManagement/v2/productOffering';
-
-            $resource(url1).query({
-                lifecycleStatus: 'Launched'
-            }, function (offerings) {
-                var url2 = baseUrl + '/DSProductCatalog/api/catalogManagement/v2/productSpecification';
-
-                var idsToHarvest = [];
-                offerings.forEach(function (offering) {
-                    if (!offering.isBundle) { //Offering bundles dont have productSpecification
-                        idsToHarvest.push(offering.productSpecification.id);
+        var searchWirecloudCatalog = function searchWirecloudCatalog () {
+            return new Promise (function (fulfill, reject) {
+                var url = baseUrl + "/DSProductCatalog/api/catalogManagement/v2/category/";
+                targetCategory = -1;
+                $resource(url).query({
+                    lifecycleStatus: "Launched"
+                }, function (categories) {
+                    if (categories.length === 0) {
+                        return;
                     }
-                });
-
-                $resource(url2).query({
-                    id: idsToHarvest.join()
-                }, function (productspecs) {
-                    var productspecs_by_id = {};
-
-                    productspecs.forEach(function (data) {
-                        productspecs_by_id[data.id] = data;
-                    });
-
-                    // Look for missing ids. (Due to a productSpec having a bundle of productSpecs)
-                    var missingIds = [];
-                    productspecs.forEach(function (data) {
-                        if (data.isBundle) {
-                            data.bundledProductSpecification.forEach(function (spec) {
-                                if (productspecs_by_id[spec.id] === undefined) {
-                                    missingIds.push(spec.id);
-                                }
-                            });
+                    // Look for the Wirecloud catalog
+                    categories.some(function (cat) {
+                        if (cat.name === "Wirecloud") {
+                            targetCategory = cat.id;
+                            return true;
+                        } else {
+                            return false;
                         }
                     });
 
-                    // Harvest missing product specs
-                    $resource(url2).query({
-                        id: missingIds.join()
+                    fulfill(true);
+                });
+            });
+        };
 
-                    }, function (bundledspecs) {
-                        // Store harvested specs
-                        bundledspecs.forEach(function (data) {
+        // Fetch data from the chosen server
+        var search = function search() {
+            var url = baseUrl + "/DSProductCatalog/api/catalogManagement/v2/productOffering";
+            var headers = {
+                lifecycleStatus: "Launched"
+            };
+            if (targetCategory !== -1) {
+                headers["category.id"] = targetCategory;
+            }
+
+            $resource(url).query(headers, function (offerings) {
+                var missingOfferingsIds = [];
+                offerings.forEach(function (offer) {
+                    if (offer.isBundle) {
+                        offer.bundledProductOffering.forEach(function (data) {
+                            if (offerings.every (function (o) {
+                                return o.id !== data.id;
+                            })) {
+                                missingOfferingsIds.push(data.id);
+                            }
+                        });
+                    }
+                });
+
+                harvestedOfferings = [];
+                var url1 = baseUrl + '/DSProductCatalog/api/catalogManagement/v2/productOffering';
+
+                $resource(url1).query({
+                    lifecycleStatus: 'Launched',
+                    id: missingOfferingsIds.join()
+                }, function (o) {
+                    offerings = offerings.concat(o);
+                    var url2 = baseUrl + '/DSProductCatalog/api/catalogManagement/v2/productSpecification';
+
+                    var idsToHarvest = [];
+                    offerings.forEach(function (offering) {
+                        if (!offering.isBundle) { //Offering bundles dont have productSpecification
+                            idsToHarvest.push(offering.productSpecification.id);
+                        }
+                    });
+
+                    $resource(url2).query({
+                        id: idsToHarvest.join()
+                    }, function (productspecs) {
+                        var productspecs_by_id = {};
+
+                        productspecs.forEach(function (data) {
                             productspecs_by_id[data.id] = data;
                         });
 
-                        // Bind the specs to the offerings
-                        harvestedOfferings = offerings.map(function (data) {
-                            if (!data.isBundle) {
-                                data.productSpecification = productspecs_by_id[data.productSpecification.id];
-
-                                // If an spec is a bundle, bind the bundled specs to it.
-                                if (data.productSpecification.isBundle) {
-                                    var specs =  [];
-                                    // Append available specs
-                                    data.productSpecification.bundledProductSpecification.forEach(function (spec) {
-                                        specs.push(productspecs_by_id[spec.id]);
-                                    });
-                                    data.productSpecification.bundledProductSpecification = specs;
-                                }
+                        // Look for missing ids. (Due to a productSpec having a bundle of productSpecs)
+                        var missingIds = [];
+                        productspecs.forEach(function (data) {
+                            if (data.isBundle) {
+                                data.bundledProductSpecification.forEach(function (spec) {
+                                    if (productspecs_by_id[spec.id] === undefined) {
+                                        missingIds.push(spec.id);
+                                    }
+                                });
                             }
-
-                            return data;
                         });
 
-                        // Build offering bundles
-                        harvestedOfferings.forEach(function (offering) {
-                            if (offering.isBundle) {
-                                offering.productSpecification = {
-                                    isBundle: true,
-                                    attachment: [{
-                                        type: "Picture",
-                                        url: ""
-                                    }],
-                                    bundledProductSpecification: []
-                                };
+                        // Harvest missing product specs
+                        $resource(url2).query({
+                            id: missingIds.join()
 
-                                var ids = [];
-                                var isPictureSet = false;
-                                offering.bundledProductOffering.forEach(function (data) {
-                                    ids.push(data.id);
-                                });
+                        }, function (bundledspecs) {
+                            // Store harvested specs
+                            bundledspecs.forEach(function (data) {
+                                productspecs_by_id[data.id] = data;
+                            });
 
-                                var currentSpecsIds = [];
-                                harvestedOfferings.forEach(function (offer) {
-                                    var i = ids.indexOf(offer.id);
-                                    if (i !== -1) {
-                                        ids.splice(i, 1);
-                                        if (!offer.productSpecification.isBundle) {
-                                            // don't allow repeated specs
-                                            if (currentSpecsIds.indexOf(offer.productSpecification.id) === -1) {
-                                                offering.productSpecification.bundledProductSpecification.push(offer.productSpecification);
-                                                currentSpecsIds.push(offer.productSpecification.id);
+                            // Bind the specs to the offerings
+                            harvestedOfferings = offerings.map(function (data) {
+                                if (!data.isBundle) {
+                                    data.productSpecification = productspecs_by_id[data.productSpecification.id];
 
-                                                // Try to set the offering image.
-                                                if (!isPictureSet) {
-                                                    isPictureSet = setBundledOfferingImage(offering, offer.productSpecification);
-                                                }
-                                            }
+                                    // If an spec is a bundle, bind the bundled specs to it.
+                                    if (data.productSpecification.isBundle) {
+                                        var specs =  [];
+                                        // Append available specs
+                                        data.productSpecification.bundledProductSpecification.forEach(function (spec) {
+                                            specs.push(productspecs_by_id[spec.id]);
+                                        });
+                                        data.productSpecification.bundledProductSpecification = specs;
+                                    }
+                                }
 
-                                        } else {
-                                            offer.productSpecification.bundledProductSpecification.forEach(function (spec) {
+                                return data;
+                            });
+
+                            // Build offering bundles
+                            harvestedOfferings.forEach(function (offering) {
+                                if (offering.isBundle) {
+                                    offering.productSpecification = {
+                                        isBundle: true,
+                                        attachment: [{
+                                            type: "Picture",
+                                            url: ""
+                                        }],
+                                        bundledProductSpecification: []
+                                    };
+
+                                    var ids = [];
+                                    var isPictureSet = false;
+                                    offering.bundledProductOffering.forEach(function (data) {
+                                        ids.push(data.id);
+                                    });
+
+                                    var currentSpecsIds = [];
+                                    harvestedOfferings.forEach(function (offer) {
+                                        var i = ids.indexOf(offer.id);
+                                        if (i !== -1) {
+                                            ids.splice(i, 1);
+                                            if (!offer.productSpecification.isBundle) {
                                                 // don't allow repeated specs
-                                                if (currentSpecsIds.indexOf(spec.id) === -1) {
-                                                    offering.productSpecification.bundledProductSpecification.push(spec);
-                                                    currentSpecsIds.push(spec.id);
+                                                if (currentSpecsIds.indexOf(offer.productSpecification.id) === -1) {
+                                                    offering.productSpecification.bundledProductSpecification.push(offer.productSpecification);
+                                                    currentSpecsIds.push(offer.productSpecification.id);
 
-                                                    // Try to set the offering image
+                                                    // Try to set the offering image.
                                                     if (!isPictureSet) {
-                                                        isPictureSet = setBundledOfferingImage(offering, spec);
+                                                        isPictureSet = setBundledOfferingImage(offering, offer.productSpecification);
                                                     }
                                                 }
-                                            });
+
+                                            } else {
+                                                offer.productSpecification.bundledProductSpecification.forEach(function (spec) {
+                                                    // don't allow repeated specs
+                                                    if (currentSpecsIds.indexOf(spec.id) === -1) {
+                                                        offering.productSpecification.bundledProductSpecification.push(spec);
+                                                        currentSpecsIds.push(spec.id);
+
+                                                        // Try to set the offering image
+                                                        if (!isPictureSet) {
+                                                            isPictureSet = setBundledOfferingImage(offering, spec);
+                                                        }
+                                                    }
+                                                });
+                                            }
                                         }
-                                    }
-                                });
-                            }
-                        });
-
-                        // Harvest asset Data
-                        var promises = [];
-                        Object.keys(productspecs_by_id).forEach(function (key) {
-                            var asset = productspecs_by_id[key];
-                            var characteristics = asset.productSpecCharacteristic;
-                            // Only harvest asset data if its a Wirecloud Component
-                            if (characteristics) {
-                                if (characteristics.some(function (char) {
-                                    if (char.name === "Asset type") {
-                                        return "Wirecloud component" === char.productSpecCharacteristicValue[0].value;
-                                    }
-                                })) {
-                                    promises.push(harvestAssetData(asset));
+                                    });
                                 }
-                            }
-                        });
+                            });
 
-                        // Wait for asset data
-                        Promise.all(promises).then(function () {
-                            // Filter the offerings
-                            $scope.results = filterOfferings (harvestedOfferings, filters, query);
-                            $scope.$apply();
+                            // Harvest asset Data
+                            var promises = [];
+                            Object.keys(productspecs_by_id).forEach(function (key) {
+                                var asset = productspecs_by_id[key];
+                                var characteristics = asset.productSpecCharacteristic;
+                                // Only harvest asset data if its a Wirecloud Component
+                                if (characteristics) {
+                                    if (characteristics.some(function (char) {
+                                        if (char.name === "Asset type") {
+                                            return "Wirecloud component" === char.productSpecCharacteristicValue[0].value;
+                                        }
+                                    })) {
+                                        promises.push(harvestAssetData(asset));
+                                    }
+                                }
+                            });
+
+                            // Wait for asset data
+                            Promise.all(promises).then(function () {
+                                // Filter the offerings
+                                $scope.results = filterOfferings (harvestedOfferings, filters, query);
+                                $scope.$apply();
+                            });
                         });
                     });
                 });
