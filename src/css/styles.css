@@ -94,6 +94,7 @@
 .section {
     display: flex;
     flex-wrap: wrap;
+    flex-grow: 0;
 }
 
 .section > .md-card {
