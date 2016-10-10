@@ -437,7 +437,8 @@ angular
                     }
                 }
                 if (filters.categoryId) {
-                    if (!offering.category.some(function (cat) {
+
+                    if (!offering.category || !offering.category.some(function (cat) {
                         return filters.categoryId === cat.id;
                     })) {
                         return;
