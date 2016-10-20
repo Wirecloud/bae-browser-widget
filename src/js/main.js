@@ -15,20 +15,21 @@ angular
 
         var filtersWidget, detailsWidgets = {};
         var query, filters, harvestedOfferings;
+        var offeringsIds;
 
         var targetCategory;
-
-        var baseUrl;
 
         var init = function init () {
             query = "";
             filters = {};
-            baseUrl = MashupPlatform.prefs.get('server_url');
+            $scope.baseUrl = cleanUrl(MashupPlatform.prefs.get('server_url'));
             harvestedOfferings = [];
 
             $scope.results = [];
             $scope.getDefaultImage = getDefaultImage;
             $scope.onDetailsClickListener = onDetailsClickListener;
+            $scope.onPurchaseClickListener = openWebpage;
+            $scope.onToggleInstall = toggleInstall;
 
             // Create the filters button and bind it
             var filtersButton = new StyledElements.Button({
@@ -73,15 +74,21 @@ angular
 
                 detailsWidgets = {};
 
-                baseUrl = MashupPlatform.prefs.get('server_url');
+                $scope.baseUrl = cleanUrl(MashupPlatform.prefs.get('server_url'));
                 // Fetch new data
 
-                var promise = searchWirecloudCatalog ();
-                promise.then(search);
+                search();
             });
 
-            var promise = searchWirecloudCatalog ();
-            promise.then(search);
+            search();
+        };
+
+        // Remove the trailing /
+        var cleanUrl = function cleanUrl (url) {
+            if (url[url.length - 1] === "/") {
+                return url.substring(0, url.length - 1);
+            }
+            return url;
         };
 
         var setQuery = function setQuery (q) {
@@ -142,7 +149,7 @@ angular
         var createDetailsWidget = function createDetailsWidget (name, id) {
 
             if (detailsWidgets[id]) {
-                return;
+                return null;
             }
 
             var detailsOutput = MashupPlatform.widget.createOutputEndpoint();
@@ -166,50 +173,84 @@ angular
         };
 
         // Creates details widget and sends chosen offering details to it.
-        var onDetailsClickListener = function onDetailsClickListener (index) {
-            var offering = $scope.results[index];
+        var onDetailsClickListener = function onDetailsClickListener (offering) {
             var connectedOutput = createDetailsWidget(offering.name, offering.id);
-            connectedOutput.pushEvent($scope.results[index]);
+
+            if (connectedOutput) {
+                connectedOutput.pushEvent(offering);
+            }
         };
 
-        var searchWirecloudCatalog = function searchWirecloudCatalog () {
-            return new Promise (function (fulfill, reject) {
-                var url = baseUrl + "/DSProductCatalog/api/catalogManagement/v2/category/";
-                targetCategory = -1;
-                $resource(url).query({
-                    lifecycleStatus: "Launched"
-                }, function (categories) {
-                    if (categories.length === 0) {
-                        return;
-                    }
-                    // Look for the Wirecloud catalog
-                    categories.some(function (cat) {
-                        if (cat.name === "Wirecloud") {
-                            targetCategory = cat.id;
-                            return true;
-                        } else {
-                            return false;
-                        }
+        // Check if all the components contained in an offering are installed
+        var isOfferingInstalled = function isOfferingInstalled (offering) {
+
+            // An offering is "installed" if all its components are installed.
+            return offering.allProducts.every(function (product) {
+                // Check if its a component
+                if (product.asset && product.asset.resourceType === "Wirecloud component") {
+                    var meta = product.asset.metadata;
+                    var isProductInstalled = MashupPlatform.components.isInstalled(meta.vendor, meta.name, meta.version);
+                    product.installed = isProductInstalled;
+
+                    return isProductInstalled;
+                } else {
+                    return true; //If its not a component.
+                }
+            });
+        };
+
+        // Check which offerings has the curent user bought
+        var checkBought = function checkBought (offeringsIds) {
+            var url = $scope.baseUrl + "/DSProductInventory/api/productInventory/v2/product";
+
+            var headers = {
+                "X-FI-WARE-OAuth-Token": true,
+                "X-FI-WARE-OAuth-Header-Name": "Authorization",
+            };
+
+            MashupPlatform.http.makeRequest(url, {
+                method: 'GET',
+                requestHeaders: headers,
+                parameters: {
+                    "productOffering.id": offeringsIds.join()
+                },
+                onSuccess: function (response) {
+                    //Inject results into the offerings
+                    var inventoryData = JSON.parse(response.responseText);
+
+                    inventoryData.forEach(function (data) {
+                        var pos = offeringsIds.indexOf(data.productOffering.id);
+                        harvestedOfferings[pos].bought = true;
+                        harvestedOfferings[pos].boughtStatus = data.status;
+
+                        //Check if offering is installed
+                        harvestedOfferings[pos].installed = isOfferingInstalled(harvestedOfferings[pos]);
                     });
 
-                    fulfill(true);
-                });
+                    $scope.$apply();
+                },
+                onError: function (response) {
+                }
             });
         };
 
         // Fetch data from the chosen server
         var search = function search() {
-            var url = baseUrl + "/DSProductCatalog/api/catalogManagement/v2/productOffering";
+            var url = $scope.baseUrl + "/DSProductCatalog/api/catalogManagement/v2/productOffering";
             var headers = {
-                lifecycleStatus: "Launched"
+                lifecycleStatus: "Launched",
             };
+
+            offeringsIds = [];
+
             if (targetCategory !== -1) {
-                headers["category.id"] = targetCategory;
+                headers["category.name"] = "Wirecloud";
             }
 
             $resource(url).query(headers, function (offerings) {
                 var missingOfferingsIds = [];
                 offerings.forEach(function (offer) {
+                    offeringsIds.push(offer.id);
                     if (offer.isBundle) {
                         offer.bundledProductOffering.forEach(function (data) {
                             if (offerings.every (function (o) {
@@ -220,16 +261,17 @@ angular
                         });
                     }
                 });
+                offeringsIds = offeringsIds.concat(missingOfferingsIds);
 
                 harvestedOfferings = [];
-                var url1 = baseUrl + '/DSProductCatalog/api/catalogManagement/v2/productOffering';
+                var url1 = $scope.baseUrl + '/DSProductCatalog/api/catalogManagement/v2/productOffering';
 
                 $resource(url1).query({
                     lifecycleStatus: 'Launched',
                     id: missingOfferingsIds.join()
                 }, function (o) {
                     offerings = offerings.concat(o);
-                    var url2 = baseUrl + '/DSProductCatalog/api/catalogManagement/v2/productSpecification';
+                    var url2 = $scope.baseUrl + '/DSProductCatalog/api/catalogManagement/v2/productSpecification';
 
                     var idsToHarvest = [];
                     offerings.forEach(function (offering) {
@@ -340,6 +382,13 @@ angular
                                         }
                                     });
                                 }
+
+                                //Build allProducts array for comodity.
+                                if (offering.productSpecification.isBundle) {
+                                    offering.allProducts = offering.productSpecification.bundledProductSpecification;
+                                } else {
+                                    offering.allProducts = [offering.productSpecification];
+                                }
                             });
 
                             // Harvest asset Data
@@ -363,7 +412,7 @@ angular
                             Promise.all(promises).then(function () {
                                 // Filter the offerings
                                 $scope.results = filterOfferings (harvestedOfferings, filters, query);
-                                $scope.$apply();
+                                checkBought(offeringsIds);
                             });
                         });
                     });
@@ -374,7 +423,7 @@ angular
         // Returns a promise harvesting the asset data of a productSpecification
         var harvestAssetData = function harvestAssetData (spec) {
             return new Promise (function (fulfill, reject) {
-                var url = baseUrl + "/charging/api/assetManagement/assets/product/" + spec.id;
+                var url = $scope.baseUrl + "/charging/api/assetManagement/assets/product/" + spec.id;
                 $resource(url).query({},
                     function (asset) {
                         spec.asset = asset[0];
@@ -465,6 +514,42 @@ angular
                 }
             }
             return "";
+        };
+
+        // Open the offering view on a new tab
+        var openWebpage = function openWebpage (offering) {
+
+            var link = $scope.baseUrl + "/#/offering/" + offering.id;
+            window.open(link);
+        };
+
+        // Install / uninstall target offering
+        var toggleInstall = function toggleInstall (offering) {
+            offering.allProducts.forEach(function (product) {
+                // Exit if current product is not a Wirecloud component
+                if (!(product.asset && product.asset.resourceType === "Wirecloud component")) {
+                    return;
+                }
+
+                if (offering.installed) {
+                    var meta = product.asset.metadata;
+                    MashupPlatform.components.uninstall(meta.vendor, meta.name, meta.version);
+                } else {
+                    MashupPlatform.components.install(getAssetUrl(product));
+                }
+
+                // Toggle its status
+                offering.installed = !offering.installed;
+            });
+        };
+
+        //Get the location of a product's asset.
+        var getAssetUrl = function getAssetUrl (product) {
+            for (var i = 0; i < product.productSpecCharacteristic.length; i++) {
+                if (product.productSpecCharacteristic[i].name === "Location") {
+                    return product.productSpecCharacteristic[i].productSpecCharacteristicValue[0].value;
+                }
+            }
         };
 
         init();

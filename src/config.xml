@@ -16,6 +16,7 @@
   </details>
   <requirements>
     <feature name="DashboardManagement"/>
+    <feature name="ComponentManagement"/>
   </requirements>
   <preferences>
     <preference name="server_url" type="text" label="Server URL" description="URL of the BAE server."/>
