@@ -548,7 +548,7 @@ angular
 
             var checkAllPassed = true;
             var newValue = !offering.installed;
-            Promise.all(promises).then(function (exitValues) {
+            Promise.all(promises.map(reflect)).then(function (exitValues) {
                 //Update the installed status of all offerings related to the installed/uninstalled components
                 for (var i = 0; i < exitValues.length; i++) {
                     if (exitValues[i]) {
@@ -584,6 +584,13 @@ angular
                     return product.productSpecCharacteristic[i].productSpecCharacteristicValue[0].value;
                 }
             }
+        };
+
+        // Promise.all helper function
+        var reflect = function reflect(promise) {
+            return promise.then(
+                function () { return true;},
+                function () { return false;});
         };
 
         init();
