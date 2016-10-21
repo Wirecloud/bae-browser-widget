@@ -68,7 +68,7 @@ angular
                 }
                 var keys = Object.keys(detailsWidgets);
                 keys.forEach(function (key) {
-                    detailsWidgets[key].remove();
+                    detailsWidgets[key].widget.remove();
                     detailsWidgets[key] = null;
                 });
 
@@ -149,7 +149,7 @@ angular
         var createDetailsWidget = function createDetailsWidget (name, id, pos) {
 
             if (detailsWidgets[id]) {
-                return null;
+                return detailsWidgets[id].output;
             }
 
             var detailsOutput = MashupPlatform.widget.createOutputEndpoint();
@@ -168,7 +168,7 @@ angular
                 delete detailsWidgets[id];
             });
 
-            detailsWidgets[id] = detailsWidget;
+            detailsWidgets[id] = {widget: detailsWidget, output: detailsOutput};
 
             return detailsOutput;
         };
@@ -178,7 +178,10 @@ angular
             var connectedOutput = createDetailsWidget(offering.name, offering.id, event.target.getBoundingClientRect());
 
             if (connectedOutput) {
-                connectedOutput.pushEvent(offering);
+                connectedOutput.pushEvent({offering: offering, callback: function (product, bool) {
+                    toggleInstalledStatus(product, bool);
+                    $scope.$apply();
+                }});
             }
         };
 
@@ -570,9 +573,18 @@ angular
 
         // Toggle the installed status of all the offerings that had the target product (If the offering.id is equal to exceptionId it is skiped.)
         var toggleInstalledStatus = function toggleInstalledStatus (product, bool, exceptionId) {
+            product.installed = bool;
+
             offeringsByProduct[product.id].forEach(function (offering) {
                 if (offering.id !== exceptionId) {
                     offering.installed = bool;
+                }
+
+                if (detailsWidgets[offering.id]) {
+                    detailsWidgets[offering.id].output.pushEvent({offering: offering, callback: function (product, bool) {
+                        toggleInstalledStatus(product, bool);
+                        $scope.$apply();
+                    }});
                 }
             });
         };
