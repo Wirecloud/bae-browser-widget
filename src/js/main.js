@@ -14,7 +14,7 @@ angular
         "use strict";
 
         var filtersWidget, detailsWidgets = {};
-        var query, filters, harvestedOfferings;
+        var query, filters, harvestedOfferings, offeringsByProduct;
         var offeringsIds;
 
         var targetCategory;
@@ -265,6 +265,7 @@ angular
                 offeringsIds = offeringsIds.concat(missingOfferingsIds);
 
                 harvestedOfferings = [];
+                offeringsByProduct = {};
                 var url1 = $scope.baseUrl + '/DSProductCatalog/api/catalogManagement/v2/productOffering';
 
                 $resource(url1).query({
@@ -288,6 +289,7 @@ angular
 
                         productspecs.forEach(function (data) {
                             productspecs_by_id[data.id] = data;
+                            offeringsByProduct[data.id] = [];
                         });
 
                         // Look for missing ids. (Due to a productSpec having a bundle of productSpecs)
@@ -310,19 +312,21 @@ angular
                             // Store harvested specs
                             bundledspecs.forEach(function (data) {
                                 productspecs_by_id[data.id] = data;
+                                offeringsByProduct[data.id] = [];
                             });
 
                             // Bind the specs to the offerings
                             harvestedOfferings = offerings.map(function (data) {
                                 if (!data.isBundle) {
                                     data.productSpecification = productspecs_by_id[data.productSpecification.id];
-
+                                    offeringsByProduct[data.productSpecification.id].push(data);
                                     // If an spec is a bundle, bind the bundled specs to it.
                                     if (data.productSpecification.isBundle) {
                                         var specs =  [];
                                         // Append available specs
                                         data.productSpecification.bundledProductSpecification.forEach(function (spec) {
                                             specs.push(productspecs_by_id[spec.id]);
+                                            offeringsByProduct[productspecs_by_id[spec.id].id].push(data);
                                         });
                                         data.productSpecification.bundledProductSpecification = specs;
                                     }
@@ -358,6 +362,7 @@ angular
                                                 // don't allow repeated specs
                                                 if (currentSpecsIds.indexOf(offer.productSpecification.id) === -1) {
                                                     offering.productSpecification.bundledProductSpecification.push(offer.productSpecification);
+                                                    offeringsByProduct[offer.productSpecification.id].push(offering);
                                                     currentSpecsIds.push(offer.productSpecification.id);
 
                                                     // Try to set the offering image.
@@ -371,6 +376,7 @@ angular
                                                     // don't allow repeated specs
                                                     if (currentSpecsIds.indexOf(spec.id) === -1) {
                                                         offering.productSpecification.bundledProductSpecification.push(spec);
+                                                        offeringsByProduct[spec.id].push(offering);
                                                         currentSpecsIds.push(spec.id);
 
                                                         // Try to set the offering image
@@ -519,13 +525,13 @@ angular
 
         // Open the offering view on a new tab
         var openWebpage = function openWebpage (offering) {
-
             var link = $scope.baseUrl + "/#/offering/" + offering.id;
             window.open(link);
         };
 
         // Install / uninstall target offering
         var toggleInstall = function toggleInstall (offering) {
+            var promises = [];
             offering.allProducts.forEach(function (product) {
                 // Exit if current product is not a Wirecloud component
                 if (!(product.asset && product.asset.resourceType === "Wirecloud component")) {
@@ -534,13 +540,40 @@ angular
 
                 if (offering.installed) {
                     var meta = product.asset.metadata;
-                    MashupPlatform.components.uninstall(meta.vendor, meta.name, meta.version);
+                    promises.push(MashupPlatform.components.uninstall(meta.vendor, meta.name, meta.version));
                 } else {
-                    MashupPlatform.components.install(getAssetUrl(product));
+                    promises.push(MashupPlatform.components.install(getAssetUrl(product)));
+                }
+            });
+
+            var checkAllPassed = true;
+            var newValue = !offering.installed;
+            Promise.all(promises).then(function (exitValues) {
+                //Update the installed status of all offerings related to the installed/uninstalled components
+                for (var i = 0; i < exitValues.length; i++) {
+                    if (exitValues[i]) {
+                        toggleInstalledStatus (offering.allProducts[i], newValue, offering.id);
+                    } else {
+                        checkAllPassed = false;
+                    }
                 }
 
-                // Toggle its status
-                offering.installed = !offering.installed;
+                // If all the components of the offering succeded, change its status
+                if (checkAllPassed) {
+                    offering.installed = newValue;
+                }
+
+                // Force update the view
+                $scope.$apply();
+            });
+        };
+
+        // Toggle the installed status of all the offerings that had the target product (If the offering.id is equal to exceptionId it is skiped.)
+        var toggleInstalledStatus = function toggleInstalledStatus (product, bool, exceptionId) {
+            offeringsByProduct[product.id].forEach(function (offering) {
+                if (offering.id !== exceptionId) {
+                    offering.installed = bool;
+                }
             });
         };
 
