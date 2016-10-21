@@ -146,7 +146,7 @@ angular
         };
 
         // Creates a details widget and returns an output endpoint connected to it.
-        var createDetailsWidget = function createDetailsWidget (name, id) {
+        var createDetailsWidget = function createDetailsWidget (name, id, pos) {
 
             if (detailsWidgets[id]) {
                 return null;
@@ -155,8 +155,9 @@ angular
             var detailsOutput = MashupPlatform.widget.createOutputEndpoint();
             var options = {
                 title: name + " Details",
-                width: "400px",
-                height: "300px"
+                width: "700px",
+                height: "500px",
+                refposition: pos,
             };
 
             var detailsWidget = MashupPlatform.mashup.addWidget('CoNWeT/bae-details/0.1.0', options);
@@ -173,8 +174,8 @@ angular
         };
 
         // Creates details widget and sends chosen offering details to it.
-        var onDetailsClickListener = function onDetailsClickListener (offering) {
-            var connectedOutput = createDetailsWidget(offering.name, offering.id);
+        var onDetailsClickListener = function onDetailsClickListener (offering, event) {
+            var connectedOutput = createDetailsWidget(offering.name, offering.id, event.target.getBoundingClientRect());
 
             if (connectedOutput) {
                 connectedOutput.pushEvent(offering);

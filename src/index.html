@@ -34,7 +34,7 @@
             </div>
           </div>
           <div class="buttonsDiv">
-            <md-button class="detailsButton se-btn btn-info" ng-click="onDetailsClickListener(offering)">Details</md-button>
+            <md-button class="detailsButton se-btn btn-info" ng-click="onDetailsClickListener(offering, $event)">Details</md-button>
             <md-button ng-if="!offering.bought" class="buyButton se-btn btn-success" ng-click="onPurchaseClickListener(offering)">Purchase</md-button>
             <md-button ng-if="offering.bought" class="buyButton se-btn btn-warning" ng-click="onToggleInstall(offering)">{{ offering.installed ? "Uninstall" : "Install" }}</md-button>
           </div>
