@@ -535,6 +535,11 @@ angular
         // Install / uninstall target offering
         var toggleInstall = function toggleInstall (offering) {
             var promises = [];
+            var market_info = {
+                name: "admin/fiware-bae",
+                store: "fiware-bae",
+            };
+
             offering.allProducts.forEach(function (product) {
                 // Exit if current product is not a Wirecloud component
                 if (!(product.asset && product.asset.resourceType === "Wirecloud component")) {
@@ -545,7 +550,7 @@ angular
                     var meta = product.asset.metadata;
                     promises.push(MashupPlatform.components.uninstall(meta.vendor, meta.name, meta.version));
                 } else {
-                    promises.push(MashupPlatform.components.install(getAssetUrl(product)));
+                    promises.push(MashupPlatform.components.install(getAssetUrl(product), market_info));
                 }
             });
 
