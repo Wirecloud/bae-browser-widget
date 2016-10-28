@@ -167,6 +167,11 @@ angular
                 title: name + " Details",
                 width: "700px",
                 height: "500px",
+                preferences: {
+                    server_url: {
+                        "value": MashupPlatform.prefs.get('server_url')
+                    }
+                },
                 refposition: pos,
             };
 
