@@ -495,12 +495,40 @@ angular
                         return;
                     }
                 }
+
                 if (filters.categoryId) {
 
                     if (!offering.category || !offering.category.some(function (cat) {
                         return filters.categoryId === cat.id;
                     })) {
                         return;
+                    }
+                }
+
+                // Status filter
+                if (filters.status) {
+                    switch (filters.status) {
+                        case "owned":
+                            if (!offering.bought) {
+                                return;
+                            }
+                            break;
+                        case "not owned":
+                            if (offering.bought) {
+                                return;
+                            }
+                            break;
+                        case "installed":
+                            if (!offering.bought || !offering.installed) {
+                                return;
+                            }
+                            break;
+                        case "not installed":
+                            if (!offering.bought || offering.installed) {
+                                return;
+                            }
+                            break;
+                        default: break;
                     }
                 }
 
