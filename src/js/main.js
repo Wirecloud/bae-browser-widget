@@ -10,6 +10,16 @@
 
 angular
     .module('widget', ['ngMaterial', 'ngResource', "angularMoment"])
+    .directive('checkImage', function () {
+        "use strict";
+        return {
+            link: function (scope, element, attrs) {
+                element.bind("error", function () {
+                    element.attr("src", scope.baseUrl + "/resources/core/images/default-no-image.png"); // set default image
+                });
+            }
+        };
+    })
     .controller('WidgetCtrl', function ($scope, $resource) {
         "use strict";
 
@@ -546,12 +556,19 @@ angular
         // Return the first attached image
         var getDefaultImage = function getDefaultImage (spec) {
             var attachments = spec.attachment;
+            var url;
             for (var i = 0; i < attachments.length; i++) {
                 if (attachments[i].type === "Picture") {
-                    return attachments[i].url;
+                    url = attachments[i].url;
+                    break;
                 }
             }
-            return "";
+
+            if (url && url !== "") {
+                return url;
+            } else {
+                return $scope.baseUrl + "/resources/core/images/default-no-image.png";
+            }
         };
 
         // Open the offering view on a new tab
