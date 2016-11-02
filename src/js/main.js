@@ -263,7 +263,7 @@ angular
             offeringsIds = [];
 
             if (targetCategory !== -1) {
-                headers["category.name"] = "Wirecloud";
+                headers["category.name"] = "WireCloud Component";
             }
 
             $resource(url).query(headers, function (offerings) {
