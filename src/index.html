@@ -30,7 +30,7 @@
                 <time am-time-ago="offering.lastUpdate"></time>
               </span>
               <p>v{{ offering.version}}</p>
-              <p>{{ offering.description ? offering.description : 'No description provided' }}</p>
+              <p class="description">{{ offering.description ? offering.description.substring(0,154) : 'No description provided' }}</p>
             </div>
           </div>
           <div class="buttonsDiv">
