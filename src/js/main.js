@@ -244,11 +244,11 @@ angular
 
                         //Check if offering is installed
                         harvestedOfferings[pos].installed = isOfferingInstalled(harvestedOfferings[pos]);
+                        $scope.$apply();
                     });
-
-                    $scope.$apply();
                 },
                 onError: function (response) {
+                    $scope.$apply();
                 }
             });
         };
