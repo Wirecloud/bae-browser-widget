@@ -223,8 +223,8 @@ angular
             var url = $scope.baseUrl + "/DSProductInventory/api/productInventory/v2/product";
 
             var headers = {
-                "X-FI-WARE-OAuth-Token": true,
-                "X-FI-WARE-OAuth-Header-Name": "Authorization",
+                "X-FIWARE-OAuth-Token": true,
+                "X-FIWARE-OAuth-Header-Name": "Authorization",
             };
 
             MashupPlatform.http.makeRequest(url, {
@@ -247,7 +247,7 @@ angular
                         $scope.$apply();
                     });
                 },
-                onError: function (response) {
+                onFailure: function (response) {
                     $scope.$apply();
                 }
             });
