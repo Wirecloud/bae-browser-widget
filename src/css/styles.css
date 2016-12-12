@@ -28,6 +28,8 @@
 #textFilter {
     margin-left: 4px;
     margin-right: 4px;
+    margin-top: auto;
+    margin-bottom: auto;
     float: left;
 }
 
