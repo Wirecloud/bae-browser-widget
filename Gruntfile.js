@@ -29,32 +29,24 @@ module.exports = function (grunt) {
             }
         },
 
-        jshint: {
-            options: {
-                jshintrc: true
-            },
-            all: {
-                files: {
-                    src: ['src/js/main.js']
-                }
+        eslint: {
+            widget: {
+                src: 'src/js/main.js'
             },
             grunt: {
                 options: {
-                    jshintrc: '.jshintrc-node'
+                    configFile: '.eslintrc-node'
                 },
-                files: {
-                    src: ['Gruntfile.js']
-                }
+                src: 'Gruntfile.js',
             },
             test: {
                 options: {
-                    jshintrc: '.jshintrc-jasmine'
+                    configFile: '.eslintrc-jasmine'
                 },
-                files: {
-                    src: ['src/test/**/*.js', '!src/test/fixtures/']
-                }
+                src: ['src/test/**/*.js', '!src/test/fixtures/']
             }
         },
+
 
         jscs: {
             widget: {
@@ -145,6 +137,11 @@ module.exports = function (grunt) {
                     specs: 'src/test/js/*Spec.js',
                     helpers: ['src/test/helpers/*.js'],
                     vendor: [
+                        'src/js/angular.min.js',
+                        'src/js/moment.min.js',
+                        'src/js/angular-moment.min.js',
+                        'src/js/*.js',
+                        'node_modules/angular-mocks/angular-mocks.js',
                         'node_modules/jquery/dist/jquery.js',
                         'node_modules/jasmine-jquery/lib/jasmine-jquery.js',
                         'node_modules/mock-applicationmashup/lib/vendor/mockMashupPlatform.js',
@@ -183,9 +180,8 @@ module.exports = function (grunt) {
 
     grunt.loadNpmTasks('grunt-wirecloud');
     grunt.loadNpmTasks('grunt-bower-task');
-    grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-contrib-jasmine'); // when test?
-    grunt.loadNpmTasks('grunt-jscs');
+    grunt.loadNpmTasks('gruntify-eslint');
     grunt.loadNpmTasks('grunt-contrib-compress');
     grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-contrib-clean');
@@ -194,9 +190,7 @@ module.exports = function (grunt) {
 
     grunt.registerTask('test', [
         'bower:install',
-        'jshint',
-        'jshint:grunt',
-        'jscs',
+        'eslint',
         'jasmine:coverage'
     ]);
 
@@ -216,5 +210,6 @@ module.exports = function (grunt) {
         'default',
         'wirecloud'
     ]);
+
 
 };

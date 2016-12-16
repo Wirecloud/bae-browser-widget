@@ -6,7 +6,7 @@
  * Licensed under the Apache-2.0 license.
  */
 
- /*global StyledElements, MashupPlatform, angular, Promise */
+ /* global StyledElements, MashupPlatform, angular, Promise */
 
 angular
     .module('widget', ['ngMaterial', 'ngResource', "angularMoment"])
@@ -29,7 +29,7 @@ angular
 
         var targetCategory;
 
-        var init = function init () {
+        var init = function init() {
             query = "";
             filters = {};
             $scope.baseUrl = cleanUrl(MashupPlatform.prefs.get('server_url'));
@@ -94,26 +94,26 @@ angular
         };
 
         // Remove the trailing /
-        var cleanUrl = function cleanUrl (url) {
+        var cleanUrl = function cleanUrl(url) {
             if (url[url.length - 1] === "/") {
                 return url.substring(0, url.length - 1);
             }
             return url;
         };
 
-        var setQuery = function setQuery (q) {
+        var setQuery = function setQuery(q) {
             q = q.getValue();
             query = "";
 
             if (typeof q === 'string' && q.length)  {
                 query = q;
             }
-            $scope.results = filterOfferings (harvestedOfferings, filters, query);
+            $scope.results = filterOfferings(harvestedOfferings, filters, query);
             $scope.$apply();
         };
 
         // Set the current chosen filters when the filterWidget sends its output
-        var setFilters = function setFilters (fil) {
+        var setFilters = function setFilters(fil) {
             filters = fil || {};
 
             if (typeof fil === 'string' && fil.length) {
@@ -123,12 +123,12 @@ angular
                 }
             }
 
-            $scope.results = filterOfferings (harvestedOfferings, filters, query);
+            $scope.results = filterOfferings(harvestedOfferings, filters, query);
             $scope.$apply();
         };
 
         // Create filter widget and connect it
-        var createFiltersWidget = function createFiltersWidget () {
+        var createFiltersWidget = function createFiltersWidget() {
             if (filtersWidget != null) {
                 return;
             }
@@ -147,7 +147,7 @@ angular
 
             filtersWidget = MashupPlatform.mashup.addWidget('CoNWeT/bae-search-filters/0.1.0', options);
             filtersInput.connect(filtersWidget.outputs.filters);
-            //Bind remove event
+            // Bind remove event
             filtersWidget.addEventListener("remove", function () {
                 filtersWidget = null;
             });
@@ -156,7 +156,7 @@ angular
         };
 
         // Creates a details widget and returns an output endpoint connected to it.
-        var createDetailsWidget = function createDetailsWidget (name, id, pos) {
+        var createDetailsWidget = function createDetailsWidget(name, id, pos) {
 
             if (detailsWidgets[id]) {
                 return detailsWidgets[id].output;
@@ -177,7 +177,7 @@ angular
 
             var detailsWidget = MashupPlatform.mashup.addWidget('CoNWeT/bae-details/0.1.0', options);
             detailsWidget.inputs.offering.connect(detailsOutput);
-            //Bind remove event
+            // Bind remove event
             detailsWidget.addEventListener("remove", function () {
                 detailsWidget = null;
                 delete detailsWidgets[id];
@@ -189,7 +189,7 @@ angular
         };
 
         // Creates details widget and sends chosen offering details to it.
-        var onDetailsClickListener = function onDetailsClickListener (offering, event) {
+        var onDetailsClickListener = function onDetailsClickListener(offering, event) {
             var connectedOutput = createDetailsWidget(offering.name, offering.id, event.target.getBoundingClientRect());
 
             if (connectedOutput) {
@@ -201,7 +201,7 @@ angular
         };
 
         // Check if all the components contained in an offering are installed
-        var isOfferingInstalled = function isOfferingInstalled (offering) {
+        var isOfferingInstalled = function isOfferingInstalled(offering) {
 
             // An offering is "installed" if all its components are installed.
             return offering.allProducts.every(function (product) {
@@ -213,13 +213,13 @@ angular
 
                     return isProductInstalled;
                 } else {
-                    return true; //If its not a component.
+                    return true; // If its not a component.
                 }
             });
         };
 
         // Check which offerings has the curent user bought
-        var checkBought = function checkBought (offeringsIds) {
+        var checkBought = function checkBought(offeringsIds) {
             var url = $scope.baseUrl + "/DSProductInventory/api/productInventory/v2/product";
 
             var headers = {
@@ -234,7 +234,7 @@ angular
                     "productOffering.id": offeringsIds.join()
                 },
                 onSuccess: function (response) {
-                    //Inject results into the offerings
+                    // Inject results into the offerings
                     var inventoryData = JSON.parse(response.responseText);
 
                     inventoryData.forEach(function (data) {
@@ -242,7 +242,7 @@ angular
                         harvestedOfferings[pos].bought = true;
                         harvestedOfferings[pos].boughtStatus = data.status;
 
-                        //Check if offering is installed
+                        // Check if offering is installed
                         harvestedOfferings[pos].installed = isOfferingInstalled(harvestedOfferings[pos]);
                         $scope.$apply();
                     });
@@ -272,7 +272,7 @@ angular
                     offeringsIds.push(offer.id);
                     if (offer.isBundle) {
                         offer.bundledProductOffering.forEach(function (data) {
-                            if (offerings.every (function (o) {
+                            if (offerings.every(function (o) {
                                 return o.id !== data.id;
                             })) {
                                 missingOfferingsIds.push(data.id);
@@ -295,7 +295,7 @@ angular
 
                     var idsToHarvest = [];
                     offerings.forEach(function (offering) {
-                        if (!offering.isBundle) { //Offering bundles dont have productSpecification
+                        if (!offering.isBundle) { // Offering bundles dont have productSpecification
                             idsToHarvest.push(offering.productSpecification.id);
                         }
                     });
@@ -408,7 +408,7 @@ angular
                                     });
                                 }
 
-                                //Build allProducts array for comodity.
+                                // Build allProducts array for comodity.
                                 if (offering.productSpecification.isBundle) {
                                     offering.allProducts = offering.productSpecification.bundledProductSpecification;
                                 } else {
@@ -436,7 +436,7 @@ angular
                             // Wait for asset data
                             Promise.all(promises).then(function () {
                                 // Filter the offerings
-                                $scope.results = filterOfferings (harvestedOfferings, filters, query);
+                                $scope.results = filterOfferings(harvestedOfferings, filters, query);
                                 checkBought(offeringsIds);
                             });
                         });
@@ -446,8 +446,8 @@ angular
         };
 
         // Returns a promise harvesting the asset data of a productSpecification
-        var harvestAssetData = function harvestAssetData (spec) {
-            return new Promise (function (fulfill, reject) {
+        var harvestAssetData = function harvestAssetData(spec) {
+            return new Promise(function (fulfill, reject) {
                 var url = $scope.baseUrl + "/charging/api/assetManagement/assets/product/" + spec.id;
                 $resource(url).query({},
                     function (asset) {
@@ -458,7 +458,7 @@ angular
             });
         };
 
-        var setBundledOfferingImage = function setBundledOfferingImage (offering, spec) {
+        var setBundledOfferingImage = function setBundledOfferingImage(offering, spec) {
             var img = getDefaultImage(spec);
             if (img && img !== "") {
                 offering.productSpecification.attachment[0].url = img;
@@ -469,7 +469,7 @@ angular
         };
 
         // Apply filters to harvested data
-        var filterOfferings = function filterOfferings (data, filters, query) {
+        var filterOfferings = function filterOfferings(data, filters, query) {
             // If there are no filters to apply return data
             if (Object.keys(filters).length === 0 && query === "") {
                 return data;
@@ -523,27 +523,27 @@ angular
                 // Status filter
                 if (filters.status) {
                     switch (filters.status) {
-                        case "owned":
-                            if (!offering.bought) {
-                                return;
-                            }
-                            break;
-                        case "not owned":
-                            if (offering.bought) {
-                                return;
-                            }
-                            break;
-                        case "installed":
-                            if (!offering.bought || !offering.installed) {
-                                return;
-                            }
-                            break;
-                        case "not installed":
-                            if (!offering.bought || offering.installed) {
-                                return;
-                            }
-                            break;
-                        default: break;
+                    case "owned":
+                        if (!offering.bought) {
+                            return;
+                        }
+                        break;
+                    case "not owned":
+                        if (offering.bought) {
+                            return;
+                        }
+                        break;
+                    case "installed":
+                        if (!offering.bought || !offering.installed) {
+                            return;
+                        }
+                        break;
+                    case "not installed":
+                        if (!offering.bought || offering.installed) {
+                            return;
+                        }
+                        break;
+                    default: break;
                     }
                 }
 
@@ -559,7 +559,7 @@ angular
         };
 
         // Return the first attached image
-        var getDefaultImage = function getDefaultImage (spec) {
+        var getDefaultImage = function getDefaultImage(spec) {
             var attachments = spec.attachment;
             var url;
             for (var i = 0; i < attachments.length; i++) {
@@ -577,13 +577,13 @@ angular
         };
 
         // Open the offering view on a new tab
-        var openWebpage = function openWebpage (offering) {
+        var openWebpage = function openWebpage(offering) {
             var link = $scope.baseUrl + "/#/offering/" + offering.id;
             window.open(link);
         };
 
         // Install / uninstall target offering
-        var toggleInstall = function toggleInstall (offering) {
+        var toggleInstall = function toggleInstall(offering) {
             var promises = [];
             var market_info = {
                 name: "admin/fiware-bae",
@@ -607,10 +607,10 @@ angular
             var checkAllPassed = true;
             var newValue = !offering.installed;
             Promise.all(promises.map(reflect)).then(function (exitValues) {
-                //Update the installed status of all offerings related to the installed/uninstalled components
+                // Update the installed status of all offerings related to the installed/uninstalled components
                 for (var i = 0; i < exitValues.length; i++) {
                     if (exitValues[i]) {
-                        toggleInstalledStatus (offering.allProducts[i], newValue, offering.id);
+                        toggleInstalledStatus(offering.allProducts[i], newValue, offering.id);
                     } else {
                         checkAllPassed = false;
                     }
@@ -627,7 +627,7 @@ angular
         };
 
         // Toggle the installed status of all the offerings that had the target product (If the offering.id is equal to exceptionId it is skiped.)
-        var toggleInstalledStatus = function toggleInstalledStatus (product, bool, exceptionId) {
+        var toggleInstalledStatus = function toggleInstalledStatus(product, bool, exceptionId) {
             product.installed = bool;
 
             offeringsByProduct[product.id].forEach(function (offering) {
@@ -644,8 +644,8 @@ angular
             });
         };
 
-        //Get the location of a product's asset.
-        var getAssetUrl = function getAssetUrl (product) {
+        // Get the location of a product's asset.
+        var getAssetUrl = function getAssetUrl(product) {
             for (var i = 0; i < product.productSpecCharacteristic.length; i++) {
                 if (product.productSpecCharacteristic[i].name === "Location") {
                     return product.productSpecCharacteristic[i].productSpecCharacteristicValue[0].value;
