@@ -10,7 +10,7 @@
     <description>Browse and check BAE offerings .</description>
     <longdescription>DESCRIPTION.md</longdescription>
     <changelog>doc/changelog.md</changelog>
-    <doc>doc/index.md</doc>
+    <doc>doc/userguide.md</doc>
     <license>Apache-2.0</license>
     <issuetracker>https://github.com/Wirecloud/bae-browser-widget/issues</issuetracker>
   </details>
