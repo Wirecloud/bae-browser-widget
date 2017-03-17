@@ -137,11 +137,6 @@ module.exports = function (grunt) {
                     specs: 'src/test/js/*Spec.js',
                     helpers: ['src/test/helpers/*.js'],
                     vendor: [
-                        'src/js/angular.min.js',
-                        'src/js/moment.min.js',
-                        'src/js/angular-moment.min.js',
-                        'src/js/*.js',
-                        'node_modules/angular-mocks/angular-mocks.js',
                         'node_modules/jquery/dist/jquery.js',
                         'node_modules/jasmine-jquery/lib/jasmine-jquery.js',
                         'node_modules/mock-applicationmashup/lib/vendor/mockMashupPlatform.js',
