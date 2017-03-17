@@ -1,6 +1,65 @@
 {
   "name": "bae-browser",
-  "dependencies": {},
+  "dependencies": {
+    "angular": "1.5.11",
+    "angular-animate": "1.5.11",
+    "angular-aria": "1.5.11",
+    "angular-material": "1.1.1",
+    "angular-messages": "1.5.11",
+    "angular-moment": "1.0.1",
+    "angular-resource": "1.5.11",
+    "moment": "2.17.1"
+  },
   "devDependencies": {},
-  "exportsOverride": {}
+  "exportsOverride": {
+    "angular": {
+      "js": [
+        "angular.min.js",
+        "angular.min.js.map"
+      ]
+    },
+    "angular-animate": {
+      "js": [
+        "angular-animate.min.js",
+        "angular-animate.min.js.map"
+      ]
+    },
+    "angular-aria": {
+      "js": [
+        "angular-aria.min.js",
+        "angular-aria.min.js.map"
+      ]
+    },
+    "angular-material": {
+      "css": [
+        "angular-material.min.css",
+        "angular-material.min.css.map"
+      ],
+      "js": [
+        "angular-material.min.js",
+        "angular-material.min.js.map"
+      ]
+    },
+    "angular-messages": {
+      "js": [
+        "angular-messages.min.js",
+        "angular-messages.min.js.map"
+      ]
+    },
+    "angular-moment": {
+      "js": [
+        "angular-moment.min.js",
+        "angular-moment.min.js.map"
+      ]
+    },
+    "angular-resource": {
+      "js": [
+        "angular-resource.min.js",
+        "angular-resource.min.js.map"
+      ]
+    },
+    "moment": {
+      "js": "min/moment-with-locales.min.js"
+    }
+  }
 }
