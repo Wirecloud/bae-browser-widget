@@ -604,7 +604,7 @@ angular
                     var meta = product.asset.metadata;
                     promises.push(MashupPlatform.components.uninstall(meta.vendor, meta.name, meta.version));
                 } else {
-                    promises.push(MashupPlatform.components.install(getAssetUrl(product), market_info));
+                    promises.push(MashupPlatform.components.install({url: getAssetUrl(product), market_endpoint: market_info}));
                 }
             });
 
