@@ -220,7 +220,7 @@ angular
 
         // Check which offerings has the curent user bought
         var checkBought = function checkBought(offeringsIds) {
-            var url = $scope.baseUrl + "/DSProductInventory/api/productInventory/v2/product";
+            var url = $scope.baseUrl + "/DSProductInventory/api/productInventory/v2/product?offset=0&relatedParty.id=" + MashupPlatform.context.get('username');
 
             var headers = {
                 "X-FI-WARE-OAuth-Token": true,
@@ -230,9 +230,6 @@ angular
             MashupPlatform.http.makeRequest(url, {
                 method: 'GET',
                 requestHeaders: headers,
-                parameters: {
-                    "productOffering.id": offeringsIds.join()
-                },
                 onSuccess: function (response) {
                     // Inject results into the offerings
                     var inventoryData = JSON.parse(response.responseText);
