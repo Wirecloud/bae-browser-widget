@@ -239,6 +239,10 @@ angular
 
                     inventoryData.forEach(function (data) {
                         var pos = offeringsIds.indexOf(data.productOffering.id);
+                        if (pos === -1) {
+                            return;
+                        }
+
                         harvestedOfferings[pos].bought = true;
                         harvestedOfferings[pos].boughtStatus = data.status;
 
