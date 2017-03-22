@@ -636,7 +636,7 @@ angular
                     $scope.pages = [];
                     // e_e
                     for (var i = 0; i < totalPages; i++) {
-                        $scope.pages.push(i);
+                        $scope.pages.push(i+1);
                     }
                 }
             });
