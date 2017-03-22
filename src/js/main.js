@@ -32,7 +32,7 @@ angular
         var currentPage, totalPages, pageSize;
 
         var init = function init() {
-            query = "";
+            query = null;
             filters = {};
             $scope.baseUrl = cleanUrl(MashupPlatform.prefs.get('server_url'));
             harvestedOfferings = [];
@@ -67,7 +67,6 @@ angular
             });
             textFilter.insertInto(document.getElementById("textFilter"));
             textFilter.addEventListener("submit", setQuery);
-            textFilter.addEventListener("change", setQuery);
 
             // Create refresh button and bind it
             var refreshButton = new StyledElements.Button({
@@ -114,13 +113,15 @@ angular
 
         var setQuery = function setQuery(q) {
             q = q.getValue();
-            query = "";
+            query = null;
 
             if (typeof q === 'string' && q.length)  {
                 query = q;
+                filters.body = query;
+                currentPage = 0;
+                getTotalPages();
+                search(currentPage);
             }
-            $scope.results = filterOfferings(offeringsToDisplay, filters, query);
-            $scope.$apply();
         };
 
         // Set the current chosen filters when the filterWidget sends its output
@@ -133,9 +134,12 @@ angular
                 } catch (e) {
                 }
             }
-
-            $scope.results = filterOfferings(offeringsToDisplay, filters, query);
-            $scope.$apply();
+            if (query != null) {
+                filters.body = query
+            }
+            currentPage = 0;
+            getTotalPages();
+            search(currentPage);
         };
 
         // Create filter widget and connect it
@@ -268,11 +272,11 @@ angular
         // Fetch data from the chosen server
         var search = function search(page) {
             var url = $scope.baseUrl + "/DSProductCatalog/api/catalogManagement/v2/productOffering";
-            var headers = {
-                lifecycleStatus: "Launched",
-                offset: page * pageSize,
-                size: pageSize
-            };
+
+            var headers = Object.assign({}, filters);
+            headers.lifecycleStatus = "Launched";
+            headers.offset = page * pageSize;
+            headers.size = pageSize;
 
             offeringsIds = [];
 
@@ -456,7 +460,8 @@ angular
                             // Wait for asset data
                             Promise.all(promises).then(function () {
                                 // Filter the offerings
-                                $scope.results = filterOfferings(offeringsToDisplay, filters, query);
+                                $scope.results = offeringsToDisplay;
+                                $scope.$apply();
                                 checkBought(offeringsIds);
                             });
                         });
@@ -486,96 +491,6 @@ angular
             } else {
                 return false;
             }
-        };
-
-        // Apply filters to harvested data
-        var filterOfferings = function filterOfferings(data, filters, query) {
-            // If there are no filters to apply return data
-            if (Object.keys(filters).length === 0 && query === "") {
-                return data;
-            }
-            var regex = new RegExp(query, "i");
-
-            var results = [];
-            data.forEach(function (offering) {
-                if (filters.offeringType != null) {
-                    if ((filters.offeringType === "bundle") !== (offering.isBundle || offering.productSpecification.isBundle)) {
-                        return;
-                    }
-                }
-
-                if (filters.macType) {
-                    var mediaType = "";
-                    // Loop all producSpecs of the offering
-                    var specs = offering.productSpecification.bundledProductSpecification || [offering.productSpecification];
-
-                    if (!specs.some(function (spec) {
-                        var characteristics = spec.productSpecCharacteristic;
-                        if (characteristics) {
-                            for (var i = 0; i < characteristics.length; i++) {
-                                if (characteristics[i].name === "Media type") {
-                                    mediaType = characteristics[i].productSpecCharacteristicValue[0].value;
-                                }
-                            }
-                        }
-
-                        return filters.macType === mediaType;
-                    })) {
-                        return;
-                    }
-                }
-
-                if (filters.catalogueId) {
-                    if (offering.href.match(/catalog\/(.*)\/productOffering/)[1] !== filters.catalogueId) {
-                        return;
-                    }
-                }
-
-                if (filters.categoryId) {
-
-                    if (!offering.category || !offering.category.some(function (cat) {
-                        return filters.categoryId === cat.id;
-                    })) {
-                        return;
-                    }
-                }
-
-                // Status filter
-                if (filters.status) {
-                    switch (filters.status) {
-                    case "owned":
-                        if (!offering.bought) {
-                            return;
-                        }
-                        break;
-                    case "not owned":
-                        if (offering.bought) {
-                            return;
-                        }
-                        break;
-                    case "installed":
-                        if (!offering.bought || !offering.installed) {
-                            return;
-                        }
-                        break;
-                    case "not installed":
-                        if (!offering.bought || offering.installed) {
-                            return;
-                        }
-                        break;
-                    default: break;
-                    }
-                }
-
-                // Apply the query filter
-                if (!regex.test(offering.name)) {
-                    return;
-                }
-
-                results.push(offering);
-            });
-
-            return results;
         };
 
         // Return the first attached image
@@ -702,7 +617,7 @@ angular
 
             MashupPlatform.http.makeRequest(url, {
                 method: 'GET',
-                requestHeaders: {},
+                parameters: filters,
                 onSuccess: function (response) {
                     // Inject results into the offerings
                     var res = JSON.parse(response.responseText);
