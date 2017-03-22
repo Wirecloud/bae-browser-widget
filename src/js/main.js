@@ -24,22 +24,33 @@ angular
         "use strict";
 
         var filtersWidget, detailsWidgets = {};
-        var query, filters, harvestedOfferings, offeringsByProduct;
+        var query, filters, harvestedOfferings, offeringsByProduct, offeringsToDisplay;
         var offeringsIds;
 
         var targetCategory;
+
+        var currentPage, totalPages, pageSize;
 
         var init = function init() {
             query = "";
             filters = {};
             $scope.baseUrl = cleanUrl(MashupPlatform.prefs.get('server_url'));
             harvestedOfferings = [];
+            offeringsToDisplay = [];
 
             $scope.results = [];
             $scope.getDefaultImage = getDefaultImage;
             $scope.onDetailsClickListener = onDetailsClickListener;
             $scope.onPurchaseClickListener = openWebpage;
             $scope.onToggleInstall = toggleInstall;
+
+            // pagination
+            $scope.goToPage = goToPage;
+            $scope.goToRelativePage = goToRelativePage;
+            $scope.getCurrentPage = getCurrentPage;
+            pageSize = 12;
+            currentPage = 0;
+            getTotalPages();
 
             // Create the filters button and bind it
             var filtersButton = new StyledElements.Button({
@@ -67,7 +78,7 @@ angular
             refreshButton.insertInto(document.getElementById("buttons"));
             refreshButton.addEventListener("click", function () {
                 // Fetch new data
-                search();
+                search(currentPage);
             });
 
             // Remove the filters widget as its data could be outdated
@@ -87,10 +98,10 @@ angular
                 $scope.baseUrl = cleanUrl(MashupPlatform.prefs.get('server_url'));
                 // Fetch new data
 
-                search();
+                search(currentPage);
             });
 
-            search();
+            search(currentPage);
         };
 
         // Remove the trailing /
@@ -108,7 +119,7 @@ angular
             if (typeof q === 'string' && q.length)  {
                 query = q;
             }
-            $scope.results = filterOfferings(harvestedOfferings, filters, query);
+            $scope.results = filterOfferings(offeringsToDisplay, filters, query);
             $scope.$apply();
         };
 
@@ -123,7 +134,7 @@ angular
                 }
             }
 
-            $scope.results = filterOfferings(harvestedOfferings, filters, query);
+            $scope.results = filterOfferings(offeringsToDisplay, filters, query);
             $scope.$apply();
         };
 
@@ -240,11 +251,11 @@ angular
                             return;
                         }
 
-                        harvestedOfferings[pos].bought = true;
-                        harvestedOfferings[pos].boughtStatus = data.status;
+                        offeringsToDisplay[pos].bought = true;
+                        offeringsToDisplay[pos].boughtStatus = data.status;
 
                         // Check if offering is installed
-                        harvestedOfferings[pos].installed = isOfferingInstalled(harvestedOfferings[pos]);
+                        offeringsToDisplay[pos].installed = isOfferingInstalled(offeringsToDisplay[pos]);
                         $scope.$apply();
                     });
                 },
@@ -255,10 +266,12 @@ angular
         };
 
         // Fetch data from the chosen server
-        var search = function search() {
+        var search = function search(page) {
             var url = $scope.baseUrl + "/DSProductCatalog/api/catalogManagement/v2/productOffering";
             var headers = {
                 lifecycleStatus: "Launched",
+                offset: page * pageSize,
+                size: pageSize
             };
 
             offeringsIds = [];
@@ -266,7 +279,7 @@ angular
             if (targetCategory !== -1) {
                 headers["category.name"] = "WireCloud Component";
             }
-
+            // Harvest page offerings
             $resource(url).query(headers, function (offerings) {
                 var missingOfferingsIds = [];
                 offerings.forEach(function (offer) {
@@ -281,21 +294,23 @@ angular
                         });
                     }
                 });
+                var toDisplayIds = offeringsIds;
                 offeringsIds = offeringsIds.concat(missingOfferingsIds);
 
                 harvestedOfferings = [];
                 offeringsByProduct = {};
                 var url1 = $scope.baseUrl + '/DSProductCatalog/api/catalogManagement/v2/productOffering';
-
+                // Harvest bundled offerings
                 $resource(url1).query({
                     lifecycleStatus: 'Launched',
                     id: missingOfferingsIds.join()
-                }, function (o) {
-                    offerings = offerings.concat(o);
+                }, function (auxOfferings) {
+                    // offerings = offerings.concat(o);
+                    var allOfferings = offerings.concat(auxOfferings);
                     var url2 = $scope.baseUrl + '/DSProductCatalog/api/catalogManagement/v2/productSpecification';
 
                     var idsToHarvest = [];
-                    offerings.forEach(function (offering) {
+                    allOfferings.forEach(function (offering) {
                         if (!offering.isBundle) { // Offering bundles dont have productSpecification
                             idsToHarvest.push(offering.productSpecification.id);
                         }
@@ -354,8 +369,12 @@ angular
                                 return data;
                             });
 
+                            offeringsToDisplay = harvestedOfferings.filter(function (offering) {
+                                return toDisplayIds.indexOf(offering.id) !== -1;
+                            });
+
                             // Build offering bundles
-                            harvestedOfferings.forEach(function (offering) {
+                            offeringsToDisplay.forEach(function (offering) {
                                 if (offering.isBundle) {
                                     offering.productSpecification = {
                                         isBundle: true,
@@ -437,7 +456,7 @@ angular
                             // Wait for asset data
                             Promise.all(promises).then(function () {
                                 // Filter the offerings
-                                $scope.results = filterOfferings(harvestedOfferings, filters, query);
+                                $scope.results = filterOfferings(offeringsToDisplay, filters, query);
                                 checkBought(offeringsIds);
                             });
                         });
@@ -659,6 +678,43 @@ angular
             return promise.then(
                 function () { return true;},
                 function () { return false;});
+        };
+
+
+        var goToPage = function goToPage(page) {
+            currentPage = page;
+            search(currentPage);
+        };
+
+        var goToRelativePage = function goToRelativePage(delta) {
+            if (currentPage + delta >= 0 && currentPage + delta <= totalPages - 1) {
+                currentPage += delta;
+                search(currentPage);
+            }
+        };
+
+        var getCurrentPage = function getCurrentPage() {
+            return currentPage;
+        };
+
+        var getTotalPages = function getTotalPages() {
+            var url = $scope.baseUrl + "/DSProductCatalog/api/catalogManagement/v2/productOffering?action=count&lifecycleStatus=Launched";
+
+            MashupPlatform.http.makeRequest(url, {
+                method: 'GET',
+                requestHeaders: {},
+                onSuccess: function (response) {
+                    // Inject results into the offerings
+                    var res = JSON.parse(response.responseText);
+
+                    totalPages = Math.ceil(res.size / pageSize - 1);
+                    $scope.pages = [];
+                    // e_e
+                    for (var i = 0; i < totalPages; i++) {
+                        $scope.pages.push(i);
+                    }
+                }
+            });
         };
 
         init();
