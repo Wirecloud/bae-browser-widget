@@ -271,7 +271,12 @@ angular
 
         // Fetch data from the chosen server
         var search = function search(page) {
-            var url = $scope.baseUrl + "/DSProductCatalog/api/catalogManagement/v2/productOffering";
+            var url;
+            if (filters["catalogue.id"] == null) {
+                url = $scope.baseUrl + "/DSProductCatalog/api/catalogManagement/v2/productOffering";
+            } else {
+                url = $scope.baseUrl + "/DSProductCatalog/api/catalogManagement/v2/catalog/" + filters["catalogue.id"] + "/productOffering";
+            }
 
             var headers = Object.assign({}, filters);
             headers.lifecycleStatus = "Launched";
@@ -613,7 +618,12 @@ angular
         };
 
         var getTotalPages = function getTotalPages() {
-            var url = $scope.baseUrl + "/DSProductCatalog/api/catalogManagement/v2/productOffering?action=count&lifecycleStatus=Launched";
+            var url;
+            if (filters["catalogue.id"] == null) {
+                url = $scope.baseUrl + "/DSProductCatalog/api/catalogManagement/v2/productOffering?action=count&lifecycleStatus=Launched";
+            } else {
+                url = $scope.baseUrl + "/DSProductCatalog/api/catalogManagement/v2/catalog/" + filters["catalogue.id"] + "/productOffering?action=count&lifecycleStatus=Launched";
+            }
 
             MashupPlatform.http.makeRequest(url, {
                 method: 'GET',
