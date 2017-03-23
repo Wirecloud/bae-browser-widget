@@ -623,7 +623,7 @@ angular
         };
 
         var goToRelativePage = function goToRelativePage(delta) {
-            if (currentPage + delta >= 0 && currentPage + delta <= totalPages - 1) {
+            if (currentPage + delta >= 1 && currentPage + delta <= totalPages) {
                 currentPage += delta;
                 search(currentPage);
             }
