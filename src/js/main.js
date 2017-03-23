@@ -260,10 +260,21 @@ angular
 
                         // Check if offering is installed
                         offeringsToDisplay[pos].installed = isOfferingInstalled(offeringsToDisplay[pos]);
-                        $scope.$apply();
                     });
                 },
+                on404: function (response) {
+                    MashupPlatform.operator.log("Error 404: Not Found");
+                },
+                on401: function (response) {
+                    MashupPlatform.operator.log("Error 401: Authentication failed");
+                },
+                on403: function (response) {
+                    MashupPlatform.operator.log("Error 403: Authorization failed");
+                },
                 onFailure: function (response) {
+                    MashupPlatform.operator.log("Unexpected response from the server");
+                },
+                onComplete: function (response) {
                     $scope.$apply();
                 }
             });
@@ -636,8 +647,20 @@ angular
                     $scope.pages = [];
                     // e_e
                     for (var i = 0; i < totalPages; i++) {
-                        $scope.pages.push(i+1);
+                        $scope.pages.push(i + 1);
                     }
+                },
+                on404: function (response) {
+                    MashupPlatform.operator.log("Error 404: Not Found");
+                },
+                on401: function (response) {
+                    MashupPlatform.operator.log("Error 401: Authentication failed");
+                },
+                on403: function (response) {
+                    MashupPlatform.operator.log("Error 403: Authorization failed");
+                },
+                onFailure: function (response) {
+                    MashupPlatform.operator.log("Unexpected response from the server");
                 }
             });
         };
