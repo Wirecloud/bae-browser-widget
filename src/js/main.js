@@ -115,7 +115,7 @@ angular
             q = q.getValue();
             query = null;
 
-            if (typeof q === 'string' && q.length)  {
+            if (typeof q === 'string')  {
                 query = q;
                 filters.body = query;
                 currentPage = 0;
