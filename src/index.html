@@ -13,7 +13,10 @@
         <div class="se-hl-east-container" id="buttons"></div>
       </div>
       <div class="se-vl-center-container">
-        <div class="section">
+        <div class="alert alert-info se-model-table-msg" ng-if="results.length == 0">
+            No offerings found.
+        </div>
+        <div class="section" ng-if="results.length > 0">
           <md-card class="offering" ng-repeat="offering in results">
             <div class="thumbnail">
               <span class="label"> {{ offering.isBundle || offering.productSpecification.isBundle ? offering.productSpecification.bundledProductSpecification.length + " Bundled" : "Single"}} </span>
