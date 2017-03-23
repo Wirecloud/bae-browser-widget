@@ -215,20 +215,28 @@ angular
 
         // Check if all the components contained in an offering are installed
         var isOfferingInstalled = function isOfferingInstalled(offering) {
+            var result = {
+                installed: false,
+                installable: false
+            };
 
             // An offering is "installed" if all its components are installed.
-            return offering.allProducts.every(function (product) {
+            result.installed = offering.allProducts.every(function (product) {
                 // Check if its a component
                 if (product.asset && product.asset.resourceType === "Wirecloud component") {
                     var meta = product.asset.metadata;
                     var isProductInstalled = MashupPlatform.components.isInstalled(meta.vendor, meta.name, meta.version);
                     product.installed = isProductInstalled;
 
+                    result.installable = true;
+
                     return isProductInstalled;
                 } else {
                     return true; // If its not a component.
                 }
             });
+
+            return result;
         };
 
         // Check which offerings has the curent user bought
@@ -257,7 +265,9 @@ angular
                         offeringsToDisplay[pos].boughtStatus = data.status;
 
                         // Check if offering is installed
-                        offeringsToDisplay[pos].installed = isOfferingInstalled(offeringsToDisplay[pos]);
+                        var aux = isOfferingInstalled(offeringsToDisplay[pos]);
+                        offeringsToDisplay[pos].installed = aux.installed;
+                        offeringsToDisplay[pos].installable = aux.installable
                     });
                 },
                 on404: function (response) {
