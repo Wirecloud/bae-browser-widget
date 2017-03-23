@@ -27,8 +27,6 @@ angular
         var query, filters, harvestedOfferings, offeringsByProduct, offeringsToDisplay;
         var offeringsIds;
 
-        var targetCategory;
-
         var currentPage, totalPages, pageSize;
 
         var init = function init() {
@@ -49,7 +47,7 @@ angular
             $scope.goToRelativePage = goToRelativePage;
             $scope.getCurrentPage = getCurrentPage;
             pageSize = 12;
-            currentPage = 0;
+            currentPage = 1;
             getTotalPages();
 
             // Create the filters button and bind it
@@ -118,7 +116,7 @@ angular
             if (typeof q === 'string')  {
                 query = q;
                 filters.body = query;
-                currentPage = 0;
+                currentPage = 1;
                 getTotalPages();
                 search(currentPage);
             }
@@ -137,7 +135,7 @@ angular
             if (query != null) {
                 filters.body = query
             }
-            currentPage = 0;
+            currentPage = 1;
             getTotalPages();
             search(currentPage);
         };
@@ -291,14 +289,11 @@ angular
 
             var headers = Object.assign({}, filters);
             headers.lifecycleStatus = "Launched";
-            headers.offset = page * pageSize;
+            headers.offset = (page - 1) * pageSize;
             headers.size = pageSize;
 
             offeringsIds = [];
 
-            if (targetCategory !== -1) {
-                headers["category.name"] = "WireCloud Component";
-            }
             // Harvest page offerings
             $resource(url).query(headers, function (offerings) {
                 var missingOfferingsIds = [];
@@ -643,7 +638,7 @@ angular
                     // Inject results into the offerings
                     var res = JSON.parse(response.responseText);
 
-                    totalPages = Math.ceil(res.size / pageSize - 1);
+                    totalPages = Math.ceil(res.size / pageSize);
                     $scope.pages = [];
                     // e_e
                     for (var i = 0; i < totalPages; i++) {
