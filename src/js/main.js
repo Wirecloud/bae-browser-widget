@@ -241,7 +241,8 @@ angular
 
         // Check which offerings has the curent user bought
         var checkBought = function checkBought(offeringsIds) {
-            var url = $scope.baseUrl + "/DSProductInventory/api/productInventory/v2/product?offset=0&relatedParty.id=" + "mognom"; // MashupPlatform.context.get('username');
+            // TODO: FIWARE IdM can create different usernames for WireCloud and BAE. This has to be improved
+            var url = $scope.baseUrl + "/DSProductInventory/api/productInventory/v2/product?offset=0&relatedParty.id=" + MashupPlatform.context.get('username');
 
             var headers = {
                 "FIWARE-OAuth-Token": true,
