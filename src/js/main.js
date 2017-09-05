@@ -241,7 +241,7 @@ angular
 
         // Check which offerings has the curent user bought
         var checkBought = function checkBought(offeringsIds) {
-            var url = $scope.baseUrl + "/DSProductInventory/api/productInventory/v2/product?offset=0&relatedParty.id=" + MashupPlatform.context.get('username');
+            var url = $scope.baseUrl + "/DSProductInventory/api/productInventory/v2/product?offset=0&relatedParty.id=" + "mognom"; // MashupPlatform.context.get('username');
 
             var headers = {
                 "FIWARE-OAuth-Token": true,
@@ -541,10 +541,6 @@ angular
         // Install / uninstall target offering
         var toggleInstall = function toggleInstall(offering) {
             var promises = [];
-            var market_info = {
-                name: "admin/fiware-bae",
-                store: "fiware-bae",
-            };
 
             offering.allProducts.forEach(function (product) {
                 // Exit if current product is not a Wirecloud component
@@ -556,7 +552,7 @@ angular
                     var meta = product.asset.metadata;
                     promises.push(MashupPlatform.components.uninstall(meta.vendor, meta.name, meta.version));
                 } else {
-                    promises.push(MashupPlatform.components.install({url: getAssetUrl(product), market_endpoint: market_info}));
+                    promises.push(MashupPlatform.components.install({url: getAssetUrl(product), headers: {"FIWARE-OAuth-Token": "true", "FIWARE-OAuth-Header-Name": "Authorization"}}));
                 }
             });
 
@@ -656,16 +652,16 @@ angular
                     }
                 },
                 on404: function (response) {
-                    MashupPlatform.operator.log("Error 404: Not Found");
+                    MashupPlatform.widget.log("Error 404: Not Found");
                 },
                 on401: function (response) {
-                    MashupPlatform.operator.log("Error 401: Authentication failed");
+                    MashupPlatform.widget.log("Error 401: Authentication failed");
                 },
                 on403: function (response) {
-                    MashupPlatform.operator.log("Error 403: Authorization failed");
+                    MashupPlatform.widget.log("Error 403: Authorization failed");
                 },
                 onFailure: function (response) {
-                    MashupPlatform.operator.log("Unexpected response from the server");
+                    MashupPlatform.widget.log("Unexpected response from the server");
                 }
             });
         };
