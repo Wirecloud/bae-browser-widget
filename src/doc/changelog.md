@@ -1,8 +1,6 @@
-## v0.1.1
+## v0.1.1 (2017-09-06)
+
+Initial version
 
 - Remove market info.
 - Fix documentation.
-
-## v0.1.0
-
-Initial version
