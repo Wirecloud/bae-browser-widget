@@ -158,7 +158,7 @@ angular
                 }
             };
 
-            filtersWidget = MashupPlatform.mashup.addWidget('CoNWeT/bae-search-filters/0.1.0', options);
+            filtersWidget = MashupPlatform.mashup.addWidget('CoNWeT/bae-search-filters/0.1.1', options);
             filtersInput.connect(filtersWidget.outputs.filters);
             // Bind remove event
             filtersWidget.addEventListener("remove", function () {
@@ -188,7 +188,7 @@ angular
                 refposition: pos,
             };
 
-            var detailsWidget = MashupPlatform.mashup.addWidget('CoNWeT/bae-details/0.1.0', options);
+            var detailsWidget = MashupPlatform.mashup.addWidget('CoNWeT/bae-details/0.1.1', options);
             detailsWidget.inputs.offering.connect(detailsOutput);
             // Bind remove event
             detailsWidget.addEventListener("remove", function () {
