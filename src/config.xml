@@ -19,7 +19,8 @@
     <feature name="ComponentManagement"/>
   </requirements>
   <preferences>
-    <preference name="server_url" type="text" label="Server URL" description="URL of the BAE server."/>
+    <preference name="server_url" type="text" label="Server URL" description="URL of the BAE server."  default="https://store.lab.fiware.org"/>
+    <preference name="default_category" type="text" label="Default category" description="Name of the default category to filter on."  default="WireCloud Component"/>
   </preferences>
   <wiring>
   </wiring>

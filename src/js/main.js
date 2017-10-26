@@ -93,12 +93,15 @@ angular
                 detailsWidgets = {};
 
                 $scope.baseUrl = cleanUrl(MashupPlatform.prefs.get('server_url'));
-                // Fetch new data
 
-                search(currentPage);
+                // Fetch new data filtering by the default category, if any
+                var cat = MashupPlatform.prefs.get('default_category');
+                searchCategoryId(cat).then(search(currentPage));
             });
 
-            search(currentPage);
+            // Fetch new data filtering by the default category, if any
+            var cat = MashupPlatform.prefs.get('default_category');
+            searchCategoryId(cat).then(search(currentPage));
         };
 
         // Remove the trailing /
@@ -107,6 +110,42 @@ angular
                 return url.substring(0, url.length - 1);
             }
             return url;
+        };
+
+        // Get the default category ID
+        var searchCategoryId = function searchCategoryId(cat) {
+            var url = MashupPlatform.prefs.get('server_url') + '/DSProductCatalog/api/catalogManagement/v2/category';
+            return new Promise(function (fulfill, reject) {
+                MashupPlatform.http.makeRequest(url, {
+                    method: 'GET',
+                    requestHeaders: {
+                        lifecycleStatus: 'Launched'
+                    },
+                    onSuccess: function (response) {
+                        var categories = JSON.parse(response.responseText);
+                        categories.forEach(function (category) {
+                            if (category.name === cat) {
+                                $scope.category = {"category.id": category.id};
+                            }
+                        });
+                    },
+                    on404: function (response) {
+                        MashupPlatform.operator.log("Error 404: Not Found");
+                    },
+                    on401: function (response) {
+                        MashupPlatform.operator.log("Error 401: Authentication failed");
+                    },
+                    on403: function (response) {
+                        MashupPlatform.operator.log("Error 403: Authorization failed");
+                    },
+                    onFailure: function (response) {
+                        MashupPlatform.operator.log("Unexpected response from the server");
+                    },
+                    onComplete: function (response) {
+                        fulfill(true);
+                    }
+                });
+            });
         };
 
         var setQuery = function setQuery(q) {
@@ -298,7 +337,9 @@ angular
                 url = $scope.baseUrl + "/DSProductCatalog/api/catalogManagement/v2/catalog/" + filters["catalogue.id"] + "/productOffering";
             }
 
-            var headers = Object.assign({}, filters);
+            // Add the filters. If there a set category on the filters, overwrites the default one
+            var headers = Object.assign({}, $scope.category, filters);
+
             headers.lifecycleStatus = "Launched";
             headers.offset = (page - 1) * pageSize;
             headers.size = pageSize;
