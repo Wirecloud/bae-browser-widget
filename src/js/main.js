@@ -193,6 +193,9 @@ angular
                 preferences: {
                     server_url: {
                         "value": MashupPlatform.prefs.get('server_url')
+                    },
+                    selected_category: {
+                        "value": MashupPlatform.prefs.get('default_category')
                     }
                 }
             };
