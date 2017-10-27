@@ -96,12 +96,12 @@ angular
 
                 // Fetch new data filtering by the default category, if any
                 var cat = MashupPlatform.prefs.get('default_category');
-                searchCategoryId(cat).then(search(currentPage));
+                searchCategoryId(cat).then(search.bind(this, currentPage));
             });
 
             // Fetch new data filtering by the default category, if any
             var cat = MashupPlatform.prefs.get('default_category');
-            searchCategoryId(cat).then(search(currentPage));
+            searchCategoryId(cat).then(search.bind(this, currentPage));
         };
 
         // Remove the trailing /
