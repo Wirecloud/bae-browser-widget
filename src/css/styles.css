@@ -16,6 +16,10 @@
     max-width: 100%;
 }
 
+.se-horizontal-layout.center{
+    align-items: center;
+}
+
 .md-card-image {
 	max-height: 150px;	
 }
