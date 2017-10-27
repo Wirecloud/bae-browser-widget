@@ -214,7 +214,7 @@ angular
         var createDetailsWidget = function createDetailsWidget(name, id, pos) {
 
             if (detailsWidgets[id]) {
-                return detailsWidgets[id].output;
+                return null;
             }
 
             var detailsOutput = MashupPlatform.widget.createOutputEndpoint();
